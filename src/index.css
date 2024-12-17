@@ -1,0 +1,74 @@
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+code {
+  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
+    monospace;
+}
+
+
+th{
+  font-weight: bold !important;
+  font-size: 14px;
+  
+}
+
+td , th{
+  font-size: 12px !important;
+  padding: 5px !important;
+  text-align: left !important;
+}
+
+
+
+.css-1dune0f-MuiInputBase-input-MuiOutlinedInput-input{
+  height: 6px !important;
+}
+
+.css-qwdxx6{
+  height: 6px !important;
+  font-size: 12px !important;
+}
+.css-sx5hge {
+  padding-top: 0px !important;
+}
+
+.MuiSelect-select.MuiSelect-outlined.MuiInputBase-input.MuiOutlinedInput-input.css-w76bbz-MuiSelect-select-MuiInputBase-input-MuiOutlinedInput-input {
+  padding: 7px 30px 7px 15px;
+}
+
+.MuiSelect-select.MuiSelect-outlined.MuiInputBase-input.MuiOutlinedInput-input.css-mp9f0v {
+  padding: 7px 30px 7px 15px !important;
+}
+
+.para{
+  font-size: '14px' ,
+}
+.title{
+  font-size: 16px;
+}
+
+.my-custom-class .MuiSelect-outlined{
+  padding: 7px 30px 7px 15px !important;
+}
+
+
+/* In your CSS file or <style> tag */
+.lightbox-popup {
+  width: 100% !important;
+  height: 100% !important;
+  max-width: 100% !important;
+  max-height: 100% !important;
+}
+
+.react-lightbox__image {
+  width: 100% !important;
+  height: auto !important;
+  object-fit: contain; /* Ensures the image is resized to fit without distortion */
+}
