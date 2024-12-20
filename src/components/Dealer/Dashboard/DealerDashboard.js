@@ -114,7 +114,7 @@ const DealerDashboard = () => {
                       fetchUserDetails={fetchUserDetails} setUserData={setUserData}/>} />
              <Route path="checkoutRedirect" element={<OrdersRedirect/>} />
 
-             <Route path="WishList" element={<WishList/>} />
+             <Route path="WishList" element={<WishList fetchCartCount={fetchCartCount} />} />
 
            </Routes>
          </Box>

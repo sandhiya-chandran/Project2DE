@@ -19,14 +19,18 @@ import ShoppingCartOutlinedIcon from "@mui/icons-material/ShoppingCartOutlined";
 import { useNavigate } from "react-router-dom";
 import soonImg from "../../assets/soon-img.png";
 
-const Wishlist = () => {
+const Wishlist = ({ fetchCartCount }) => {
   const navigate = useNavigate();
   const [wishlist, setWishlist] = useState([]);
   const [error, setError] = useState(null);
-  const [openDialog, setOpenDialog] = useState(false); // State to control dialog visibility
-  const [itemToDelete, setItemToDelete] = useState(null); // State to hold the item to delete
+  const [openDialog, setOpenDialog] = useState(false); 
+  const [itemToDelete, setItemToDelete] = useState(null); 
+  const [quantity, setQuantity] = useState({});
+  const [cartItems, setCartItems] = useState([]);
 
-  useEffect(() => {
+
+  useEffect(() => 
+    {
     const fetchWishlist = async () => {
       try {
         const userData = localStorage.getItem("user");
@@ -88,6 +92,69 @@ const Wishlist = () => {
 
   const handleProductClick = (productId) => {
     navigate(`/dealer/products/${productId}`);
+  };
+
+  const handleAddToCart = async (product, quantity) => {
+    try {
+      const userData = localStorage.getItem("user");
+      const user = JSON.parse(userData); // Assuming user data is stored in localStorage
+      const userId = user.id; // Extract user ID
+
+      // Check if the product already exists in the cart
+      const existingItem = cartItems.find(
+        (item) => item.product_id === product.id
+      );
+
+      if (existingItem) {
+        // Update quantity if product is already in the cart
+        // const updatedCartItems = cartItems.map((item) =>
+        //   item.product_id === product.id
+        //     ? { ...item, quantity: item.quantity + quantity }
+        //     : item
+        // );
+        // setCartItems(updatedCartItems);
+
+        // Send API request to update the cart
+        await axios.post(
+          `${process.env.REACT_APP_IP}createOrUpdateUserCartItem/`,
+          {
+            user_id: userId,
+            product_id: product.product_id,
+            quantity: 1,
+            price: product.price,
+          }
+        );
+
+        // toast.success("Product quantity updated."); 
+      } else {
+        // Add new item to the cart
+        const newCartItem = {
+          product_id: product.product_id,
+          quantity: 1,
+          price: product.price,
+        };
+        setCartItems([...cartItems, newCartItem]);
+
+        // Send API request to create or update the cart item
+        await axios.post(
+          `${process.env.REACT_APP_IP}createOrUpdateUserCartItem/`,
+          {
+            user_id: userId,
+            product_id: product.product_id,
+            quantity: 1,
+            price: product.price,
+          }
+        );
+
+        // toast.success("Product added successfully."); 
+      }
+
+      console.log("Cart updated successfully!");
+      fetchCartCount();
+      console.log("Cart count updated successfully!");
+    } catch (error) {
+      console.error("Error adding item to cart:", error);
+    }
   };
 
   return (
@@ -301,6 +368,10 @@ const Wishlist = () => {
                             : "not-allowed",
                         }}
                         disabled={!product.availability}
+                        onClick={(e) => {
+                          e.stopPropagation(); // Prevent card click
+                          handleAddToCart(product, quantity[product.id] || 1);
+                        }}
                       >
                         <ShoppingCartOutlinedIcon sx={{ padding: "0" }} />
                       </IconButton>

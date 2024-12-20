@@ -58,13 +58,12 @@ const ProductList = ({ fetchCartCount }) => {
   const [selectedCategoryId, setSelectedCategoryId] = useState(null); // Tracks the selected category ID
   const [industry, setIndustry] = useState(null); // Stores the selected industry object
   const [Category, setCategory] = useState(null); // Stores the selected Category object
-  const [isInWishlist, setIsInWishlist] = useState(false);
-  const [wishlistProducts, setWishlistProducts] = useState([]);
-
   const [page, setPage] = useState(1); // Current page
   const [productsCount, setProductsCount] = useState([]);
   const [totalPages, setTotalPages] = useState(1); // Total pages
   const productsPerPage = 100; // Number of products per page
+
+  const [wishlistProducts, setWishlistProducts] = useState([]);
 
   const userData = localStorage.getItem("user");
   const [debounceTimer, setDebounceTimer] = useState(null);
@@ -345,7 +344,10 @@ const ProductList = ({ fetchCartCount }) => {
       const user = JSON.parse(userData);
       const userId = user.id;
   
-      // Send API request to update the wishlist
+      // Optimistically update the wishlist state before the API call
+      setWishlistProducts((prev) => [...prev, product.id]);
+  
+      // Send POST request to add the product to the wishlist
       const response = await axios.post(
         `${process.env.REACT_APP_IP}createWishList/`,
         {
@@ -355,17 +357,33 @@ const ProductList = ({ fetchCartCount }) => {
       );
   
       console.log("Product added to wishlist", response.data);
-  
-      // Update wishlist state for the specific product
-      setWishlistProducts((prev) =>
-        prev.includes(product.id)
-          ? prev.filter((id) => id !== product.id) // Remove from wishlist
-          : [...prev, product.id] // Add to wishlist
-      );
     } catch (error) {
       console.error("Error adding item to WishList:", error);
+  
+      // If the API call fails, remove the product from the wishlist state
+      setWishlistProducts((prev) => prev.filter((id) => id !== product.id));
     }
   };
+  
+  const handleRemoveFromWishList = async (product) => {
+    try {
+      // Optimistically update the wishlist state before the API call
+      setWishlistProducts((prev) => prev.filter((id) => id !== product.id));
+  
+      // Send GET request to delete the product from the wishlist
+      const response = await axios.get(
+        `${process.env.REACT_APP_IP}deleteWishlist/?wish_list_id=${product.wishlist_id}`
+      );
+  
+      console.log("Product removed from wishlist", response.data);
+    } catch (error) {
+      console.error("Error removing item from WishList:", error);
+  
+      // If the API call fails, add the product back to the wishlist state
+      setWishlistProducts((prev) => [...prev, product.id]);
+    }
+  };
+  
 
   const handleSortChange = (value) => {
     setSortByValue(value);
@@ -456,13 +474,6 @@ const ProductList = ({ fetchCartCount }) => {
       },
     });
   };
-
-  // , {
-  //   state: {
-  //     industry: industry,
-  //     category: Category,
-  //   },
-  // }
 
   if (loading)
     return (
@@ -658,8 +669,7 @@ const ProductList = ({ fetchCartCount }) => {
             }}
           />
           <Button sx={{ p: 0, textTransform: "none", color: "black" }}>
-            Total {searchQuery ? searchResults.length : productsCount}{" "}
-            Products
+            Total {searchQuery ? searchResults.length : productsCount} Products
           </Button>
         </Box>
       </Box>
@@ -772,20 +782,21 @@ const ProductList = ({ fetchCartCount }) => {
                       }
                       arrow
                     >
-                      {wishlistProducts.includes(product.id) ? (
+                      {wishlistProducts.includes(product.id) ||
+                      product.is_wishlist ? (
                         <FavoriteIcon
-                          sx={{ color: "#ff4081", cursor: "pointer" }}
+                          sx={{ color: "#ff4081", cursor: "pointer" }} // Pink color for wishlist items
                           onClick={(e) => {
                             e.stopPropagation(); // Prevent card click
-                            handleAddToWishList(product);
+                            handleRemoveFromWishList(product); // Remove from wishlist
                           }}
                         />
                       ) : (
                         <FavoriteBorderIcon
-                          sx={{ color: "#615e5e", cursor: "pointer" }}
+                          sx={{ color: "#615e5e", cursor: "pointer" }} // Gray color for non-wishlist items
                           onClick={(e) => {
                             e.stopPropagation(); // Prevent card click
-                            handleAddToWishList(product);
+                            handleAddToWishList(product); // Add to wishlist
                           }}
                         />
                       )}

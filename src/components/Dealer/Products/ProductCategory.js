@@ -20,7 +20,7 @@ const ProductSidebar = () => {
       {/* Brand Section */}
       <Box mb={4}>
         <Typography variant="h6" gutterBottom sx={{ fontSize: "14px" }}>
-          Brand Name
+          Brand
         </Typography>
         <FormGroup>
           <FormControlLabel

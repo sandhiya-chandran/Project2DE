@@ -19,6 +19,7 @@ import {
 } from "@mui/material";
 import HighlightOffIcon from "@mui/icons-material/HighlightOff";
 import { useNavigate } from "react-router-dom";
+import soonImg from "../../assets/soon-img.png";
 
 const CartPage = ({fetchCartCount}) => {
   const [cartItems, setCartItems] = useState([]);
@@ -361,15 +362,26 @@ const CartPage = ({fetchCartCount}) => {
                   <TableRow key={item.id}>
                     <TableCell>
                       {item.primary_image && (
-                        <img
-                          src={item.primary_image}
-                          alt={item.name}
-                          style={{
-                            width: "40px",
-                            height: "40px",
-                            objectFit: "cover",
-                          }}
-                        />
+                       <img
+                       src={
+                         !item.primary_image ||
+                         item.primary_image?.startsWith("http://example.com") ||
+                         !(
+                           item.primary_image?.startsWith("http") ||
+                           item.primary_image?.startsWith("https")
+                         )
+                           ? soonImg
+                           : item.primary_image
+                       }
+                       alt={item.name || "Product Image"}
+                       style={{
+                         width: "40px",
+                         height: "40px",
+                         objectFit: "cover",
+                         boxShadow: "0px 0px 2px rgba(0, 0, 0, 0.1)", // Light shadow
+                       }}
+                     />
+                      
                       )}
                     </TableCell>
                     <TableCell >
