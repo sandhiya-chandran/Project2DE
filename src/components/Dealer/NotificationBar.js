@@ -4,6 +4,7 @@ import React from "react";
 import { Box, Typography, IconButton, Badge, Tooltip } from "@mui/material";
 import AccountCircleIcon from "@mui/icons-material/AccountCircle";
 import ShoppingCartIcon from "@mui/icons-material/ShoppingCart";
+import FavoriteIcon from "@mui/icons-material/Favorite";
 import { useNavigate } from "react-router-dom";
 
 const NotificationBar = ({ cartCount , userData}) => {
@@ -31,6 +32,18 @@ const user = JSON.parse(localStorage.getItem("user"));
       
 
       <Box sx={{ display: "flex", alignItems: "center" }}>
+
+      <Tooltip title="WishList" arrow>
+          <IconButton
+            sx={{ color: "white" ,  "&:hover": {
+              backgroundColor: "transparent", // Disables background color on hover
+            },}}
+            onClick={() => navigate("/dealer/WishList")}
+          >
+            <FavoriteIcon />
+          </IconButton>
+        </Tooltip>
+
         {/* Cart Icon with Count and Total */}
         <IconButton
           sx={{ color: "white" }}
@@ -52,6 +65,10 @@ const user = JSON.parse(localStorage.getItem("user"));
           <Typography variant="body2" ml={1}>  {userData?.first_name || user.name}</Typography>
           </IconButton>
         </Tooltip>
+
+
+
+       
       
       </Box>
     </Box>

@@ -135,7 +135,7 @@ const OrderList = () => {
      
       <Box  sx={{ display: "flex", justifyContent: "flex-end", alignItems:'center' , gap:2 }}> 
          <TextField
-          placeholder="Search by Order ID , Payment , Delivery"
+          placeholder="Search Orders"
           sx={{
             width: "250px",
             "& .MuiOutlinedInput-input": {

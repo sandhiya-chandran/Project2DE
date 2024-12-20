@@ -16,6 +16,7 @@ import OrderDetailPage from '../orders/orderDetails';
 import ProductDetailPage from '../Products/ProductDetailPage';
 import DealerProfile from '../Dashboard/DealerProfile';
 import OrdersRedirect from '../Products/OrdersRedirect';
+import WishList from '../Products/Wishlist';
 
 import { Button , Tooltip } from "@mui/material";
 import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
@@ -112,6 +113,8 @@ const DealerDashboard = () => {
              <Route path="profile" element={<DealerProfile  userData={userData}
                       fetchUserDetails={fetchUserDetails} setUserData={setUserData}/>} />
              <Route path="checkoutRedirect" element={<OrdersRedirect/>} />
+
+             <Route path="WishList" element={<WishList/>} />
 
            </Routes>
          </Box>

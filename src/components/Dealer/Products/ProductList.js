@@ -1,7 +1,5 @@
 // src\components\Dealer\Products\ProductList.js
-
 import React, { useState, useEffect, useRef } from "react";
-
 import { useLocation } from "react-router-dom";
 import axios from "axios";
 import Tooltip from "@mui/material/Tooltip";
@@ -35,11 +33,13 @@ import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { tabsClasses } from "@mui/material/Tabs";
 import { useNavigate } from "react-router-dom";
+import FavoriteBorderIcon from "@mui/icons-material/FavoriteBorder";
+import FavoriteIcon from "@mui/icons-material/Favorite";
 
 const ProductList = ({ fetchCartCount }) => {
   const location = useLocation();
   const navigate = useNavigate();
-  
+
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -47,7 +47,7 @@ const ProductList = ({ fetchCartCount }) => {
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [quantity, setQuantity] = useState({});
   const [cartItems, setCartItems] = useState([]);
-  
+
   const [sortByValue, setSortByValue] = useState(1);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState([]);
@@ -58,6 +58,8 @@ const ProductList = ({ fetchCartCount }) => {
   const [selectedCategoryId, setSelectedCategoryId] = useState(null); // Tracks the selected category ID
   const [industry, setIndustry] = useState(null); // Stores the selected industry object
   const [Category, setCategory] = useState(null); // Stores the selected Category object
+  const [isInWishlist, setIsInWishlist] = useState(false);
+  const [wishlistProducts, setWishlistProducts] = useState([]);
 
   const [page, setPage] = useState(1); // Current page
   const [productsCount, setProductsCount] = useState([]);
@@ -67,7 +69,6 @@ const ProductList = ({ fetchCartCount }) => {
   const userData = localStorage.getItem("user");
   const [debounceTimer, setDebounceTimer] = useState(null);
   const debounceTimerRef = useRef(null);
-
 
   // Fetch Products
   useEffect(() => {
@@ -194,7 +195,7 @@ const ProductList = ({ fetchCartCount }) => {
       fetchCategories(); // Trigger the API call for categories
     }
   }, [industry]);
-  
+
   useEffect(() => {
     // Check if the state contains searchQuery and set it
     if (location.state && location.state.searchQuery) {
@@ -202,33 +203,30 @@ const ProductList = ({ fetchCartCount }) => {
     }
   }, [location.state]); // Depend on location.state to update when navigating back
 
- 
   useEffect(() => {
     // Handle pre-selection of filters when returning from ProductDetails
     if (location.state) {
       const { industry, category } = location.state;
-  
+
       console.log("Returned industry:", industry);
       console.log("Returned category:", category);
-  
+
       if (industry) {
         setIndustry(industry); // Set industry
       }
-  
+
       if (category) {
         setSelectedCategoryId(category.id); // Set category ID
         setCategory(category); // Set full category object
       }
     }
   }, [location.state]); // This ensures pre-selection happens when navigating back
-  
 
   useEffect(() => {
     if (searchQuery) {
       handleSearch(searchQuery, sortByValue);
     }
   }, [searchQuery, sortByValue]);
-  
 
   const handleIndustryChange = (event) => {
     setValue(-1);
@@ -333,6 +331,39 @@ const ProductList = ({ fetchCartCount }) => {
       console.log("Cart count updated successfully!");
     } catch (error) {
       console.error("Error adding item to cart:", error);
+    }
+  };
+
+  const handleAddToWishList = async (product) => {
+    try {
+      const userData = localStorage.getItem("user");
+      if (!userData) {
+        console.error("No user logged in");
+        return;
+      }
+  
+      const user = JSON.parse(userData);
+      const userId = user.id;
+  
+      // Send API request to update the wishlist
+      const response = await axios.post(
+        `${process.env.REACT_APP_IP}createWishList/`,
+        {
+          user_id: userId,
+          product_id: product.id,
+        }
+      );
+  
+      console.log("Product added to wishlist", response.data);
+  
+      // Update wishlist state for the specific product
+      setWishlistProducts((prev) =>
+        prev.includes(product.id)
+          ? prev.filter((id) => id !== product.id) // Remove from wishlist
+          : [...prev, product.id] // Add to wishlist
+      );
+    } catch (error) {
+      console.error("Error adding item to WishList:", error);
     }
   };
 
@@ -627,7 +658,7 @@ const ProductList = ({ fetchCartCount }) => {
             }}
           />
           <Button sx={{ p: 0, textTransform: "none", color: "black" }}>
-            Total {searchQuery ? searchResults.length : products.length}{" "}
+            Total {searchQuery ? searchResults.length : productsCount}{" "}
             Products
           </Button>
         </Box>
@@ -712,7 +743,7 @@ const ProductList = ({ fetchCartCount }) => {
                       product.was_price.toFixed(2) && (
                       <Box
                         position="absolute"
-                        bottom={8}
+                        top={8}
                         left={8}
                         bgcolor="primary.main"
                         color="white"
@@ -726,9 +757,38 @@ const ProductList = ({ fetchCartCount }) => {
                       </Box>
                     )}
 
-                  <Box position="absolute" bottom={4} right={8}>
+                  <Box position="absolute" bottom={4} left={8}>
                     <Tooltip title="Compare Products" arrow>
                       <CompareArrowsOutlinedIcon sx={{ color: "#615e5e" }} />
+                    </Tooltip>
+                  </Box>
+
+                  <Box position="absolute" bottom={4} right={8}>
+                    <Tooltip
+                      title={
+                        wishlistProducts.includes(product.id)
+                          ? "Remove from wishlist"
+                          : "Add to wishlist"
+                      }
+                      arrow
+                    >
+                      {wishlistProducts.includes(product.id) ? (
+                        <FavoriteIcon
+                          sx={{ color: "#ff4081", cursor: "pointer" }}
+                          onClick={(e) => {
+                            e.stopPropagation(); // Prevent card click
+                            handleAddToWishList(product);
+                          }}
+                        />
+                      ) : (
+                        <FavoriteBorderIcon
+                          sx={{ color: "#615e5e", cursor: "pointer" }}
+                          onClick={(e) => {
+                            e.stopPropagation(); // Prevent card click
+                            handleAddToWishList(product);
+                          }}
+                        />
+                      )}
                     </Tooltip>
                   </Box>
 

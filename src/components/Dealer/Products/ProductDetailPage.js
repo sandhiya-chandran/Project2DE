@@ -51,15 +51,28 @@ const ProductDetail = ({ fetchCartCount }) => {
   useEffect(() => {
     const fetchProduct = async () => {
       try {
+
         const response = await axios.get(
           `${process.env.REACT_APP_IP}obtainProductDetails/?product_id=${id}`
         );
+        
         const data = response.data.data || {};
         setProduct(data);
         setMainImage(data.logo || "");
 
+        const userData = localStorage.getItem("user");
+
+          let manufactureUnitId = "";
+
+          if (userData) {
+            const data = JSON.parse(userData);
+            manufactureUnitId = data.manufacture_unit_id;
+          }
+
+
+
         const relatedResponse = await axios.get(
-          `${process.env.REACT_APP_IP}get_related_products/?product_id=${id}`
+          `${process.env.REACT_APP_IP}get_related_products/?product_id=${id}&manufacture_unit_id=${manufactureUnitId}`
         );
         const relatedData = relatedResponse.data.data || [];
         setRelatedProducts(relatedData);
@@ -201,7 +214,7 @@ const ProductDetail = ({ fetchCartCount }) => {
 
   return (
     <Box sx={{ padding: 2 }}>
-      <Box>
+      {/* <Box>
         <Breadcrumbs aria-label="breadcrumb" sx={{ margin: "16px 0" }}>
           <Link
             component="button"
@@ -240,7 +253,7 @@ const ProductDetail = ({ fetchCartCount }) => {
             </Typography>
           )}
         </Breadcrumbs>
-      </Box>
+      </Box> */}
 
       {/* {(!industry || !category) && (
         <Box display="flex" alignItems="center" gap={2} mb={3}>

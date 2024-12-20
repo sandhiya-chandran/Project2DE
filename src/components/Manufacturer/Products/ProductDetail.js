@@ -55,9 +55,19 @@ function ProductDetail() {
         setProduct(data);
         setMainImage(data.logo || "");
 
+        const userData = localStorage.getItem("user");
+
+          let manufactureUnitId = "";
+
+          if (userData) {
+            const data = JSON.parse(userData);
+            manufactureUnitId = data.manufacture_unit_id;
+          }
+
         const relatedResponse = await axios.get(
-          `${process.env.REACT_APP_IP}get_related_products/?product_id=${id}`
+          `${process.env.REACT_APP_IP}get_related_products/?product_id=${id}&manufacture_unit_id=${manufactureUnitId}`
         );
+        
         const relatedData = relatedResponse.data.data || [];
         setRelatedProducts(relatedData);
 
