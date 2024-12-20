@@ -13,6 +13,7 @@ import {
   DialogActions,
   DialogContent,
   DialogTitle,
+  CircularProgress
 } from "@mui/material";
 import DeleteIcon from "@mui/icons-material/Delete";
 import ShoppingCartOutlinedIcon from "@mui/icons-material/ShoppingCartOutlined";
@@ -23,6 +24,7 @@ const Wishlist = ({ fetchCartCount }) => {
   const navigate = useNavigate();
   const [wishlist, setWishlist] = useState([]);
   const [error, setError] = useState(null);
+  const [loading, setLoading] = useState(true);
   const [openDialog, setOpenDialog] = useState(false); 
   const [itemToDelete, setItemToDelete] = useState(null); 
   const [quantity, setQuantity] = useState({});
@@ -49,6 +51,7 @@ const Wishlist = ({ fetchCartCount }) => {
 
         setWishlist(response.data.data || []);
         console.log("Wishlist data retrieved:", response.data);
+        setLoading(false)
       } catch (error) {
         setError("Error retrieving wishlist");
         console.error("Error retrieving wishlist:", error);
@@ -166,239 +169,227 @@ const Wishlist = ({ fetchCartCount }) => {
         My Wishlist
       </Typography>
 
-      {error ? (
-        <Typography color="error">{error}</Typography>
-      ) : wishlist.length === 0 ? (
-        <Box sx={{ textAlign: "center", paddingTop: "50px" }}>
-          <Typography variant="h6" marginBottom={"20px"}>
-            Your Wishlist is Empty
-          </Typography>
-          <Button
-            variant="contained"
-            color="primary"
-            onClick={() => navigate("/dealer/products")}
-          >
-            Continue Shopping
-          </Button>
-        </Box>
-      ) : (
-        <Box display="flex" flexWrap="wrap" gap={3} justifyContent="flex-start">
-          
-          {wishlist.map((product) => (
-            <Box
-              key={product.id}
-              width={{
-                xs: "100%",
-                sm: "calc(50% - 24px)",
-                md: "calc(25% - 24px)",
+      {loading ? (
+  <Box sx={{ textAlign: "center", paddingTop: "50px" }}>
+    <CircularProgress color="primary" />
+  </Box>
+) : error ? (
+  <Typography color="error">{error}</Typography>
+) : wishlist.length > 0 ? (
+  <Box display="flex" flexWrap="wrap" gap={3} justifyContent="flex-start">
+    {wishlist.map((product) => (
+      <Box
+        key={product.id}
+        width={{
+          xs: "100%",
+          sm: "calc(50% - 24px)",
+          md: "calc(25% - 24px)",
+        }}
+        mb={3}
+      >
+        <Card
+          onClick={() => handleProductClick(product.product_id)}
+          style={{
+            height: "350px",
+            display: "flex",
+            flexDirection: "column",
+            justifyContent: "flex-start",
+            cursor: "pointer",
+          }}
+        >
+          <Box position="relative">
+            <CardMedia
+              component="img"
+              height="150"
+              image={
+                !product.primary_image ||
+                product.primary_image.startsWith("http://example.com") ||
+                !(
+                  product.primary_image.startsWith("http") ||
+                  product.primary_image.startsWith("https")
+                )
+                  ? soonImg
+                  : product.primary_image
+              }
+              alt={product.name || "Product Image"}
+              sx={{
+                objectFit: "contain",
+                boxShadow: "0px 0px 2px rgba(0, 0, 0, 0.1)",
               }}
-              mb={3}
-            >
-              <Card
-                onClick={() => handleProductClick(product.product_id)}
-                style={{
-                  height: "350px",
-                  display: "flex",
-                  flexDirection: "column",
-                  justifyContent: "flex-start",
-                  cursor: "pointer",
-                }}
+            />
+            {product.in_cart && (
+              <Box
+                position="absolute"
+                bottom={8}
+                left={8}
+                bgcolor="green"
+                color="white"
+                px={1}
+                py={0.5}
+                borderRadius={1}
+                zIndex={1}
+                fontSize={8}
               >
-                <Box position="relative">
-                  <CardMedia
-                    component="img"
-                    height="150"
-                    image={
-                      !product.primary_image ||
-                      product.primary_image.startsWith("http://example.com") ||
-                      !(
-                        product.primary_image.startsWith("http") ||
-                        product.primary_image.startsWith("https")
-                      )
-                        ? soonImg
-                        : product.primary_image
-                    }
-                    alt={product.name || "Product Image"}
-                    sx={{
-                      objectFit: "contain",
-                      boxShadow: "0px 0px 2px rgba(0, 0, 0, 0.1)", // Light shadow
-                    }}
-                  />
-
-                  {product.in_cart && (
-                    <Box
-                      position="absolute"
-                      bottom={8}
-                      left={8}
-                      bgcolor="green"
-                      color="white"
-                      px={1}
-                      py={0.5}
-                      borderRadius={1}
-                      zIndex={1}
-                      fontSize={8}
-                    >
-                      In Cart
-                    </Box>
-                  )}
-
-                  {product.discount > 0 &&
-                    product.price.toFixed(2) !==
-                      product.was_price.toFixed(2) && (
-                      <Box
-                        position="absolute"
-                        top={8}
-                        left={8}
-                        bgcolor="primary.main"
-                        color="white"
-                        px={1}
-                        py={0.5}
-                        borderRadius={1}
-                        zIndex={1}
-                        fontSize={8}
-                      >
-                        {`${product.discount}% OFF`}
-                      </Box>
-                    )}
+                In Cart
+              </Box>
+            )}
+            {product.discount > 0 &&
+              product.price.toFixed(2) !== product.was_price.toFixed(2) && (
+                <Box
+                  position="absolute"
+                  top={8}
+                  left={8}
+                  bgcolor="primary.main"
+                  color="white"
+                  px={1}
+                  py={0.5}
+                  borderRadius={1}
+                  zIndex={1}
+                  fontSize={8}
+                >
+                  {`${product.discount}% OFF`}
                 </Box>
-
-                <CardContent
-                  sx={{
-                    padding: "8px !important",
-                    height: "100%",
-                    display: "flex",
-                    flexDirection: "column",
-                    justifyContent: "space-between",
+              )}
+          </Box>
+          <CardContent
+            sx={{
+              padding: "8px !important",
+              height: "100%",
+              display: "flex",
+              flexDirection: "column",
+              justifyContent: "space-between",
+            }}
+          >
+            <Box>
+              <Tooltip title={product.name}>
+                <Typography
+                  variant="subtitle1"
+                  style={{
+                    lineHeight: "22px",
+                    marginBottom: "10px",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    display: "-webkit-box",
+                    WebkitBoxOrient: "vertical",
+                    WebkitLineClamp: 2,
                   }}
                 >
-                  <Box>
-                    <Tooltip title={product.name}>
-                      <Typography
-                        variant="subtitle1"
-                        style={{
-                          lineHeight: "22px",
-                          marginBottom: "10px",
-                          overflow: "hidden",
-                          textOverflow: "ellipsis",
-                          display: "-webkit-box", // Required for line clamping
-                          WebkitBoxOrient: "vertical", // Sets the orientation of the box
-                          WebkitLineClamp: 2, // Limits text to 2 lines
-                        }}
-                      >
-                        {product.name}
-                      </Typography>
-                    </Tooltip>
-
-                    <Box
-                      sx={{
-                        mt: 1,
-                        display: "flex",
-                        gap: "10px",
-                        alignItems: "center",
-                        flexWrap: "wrap",
-                      }}
-                    >
-                      <Typography sx={{ fontSize: "12px" }}>
-                        SKU: {product.sku_number}
-                      </Typography>
-                      <Typography sx={{ fontSize: "12px" }}>
-                        MPN: {product.mpn_number}
-                      </Typography>
-                    </Box>
-
-                    <Typography sx={{ mt: 1, fontSize: "12px" }}>
-                      MSRP : {product.currency}
-                      {product.msrp.toFixed(2)}
-                    </Typography>
-
-                    <Box
-                      sx={{
-                        mt: 1,
-                        display: "flex",
-                        gap: "10px",
-                        alignItems: "center",
-                        flexWrap: "wrap",
-                      }}
-                    >
-                      <Typography variant="body1" color="text.primary">
-                        {product.currency}
-                        {product.price.toFixed(2)}
-                      </Typography>
-
-                      <Typography
-                        variant="body2"
-                        color="text.secondary"
-                        style={
-                          product.price.toFixed(2) ===
-                          product.was_price.toFixed(2)
-                            ? { textDecoration: "none" }
-                            : { textDecoration: "line-through" }
-                        }
-                      >
-                        Was:{product.currency}
-                        {product.was_price.toFixed(2)}
-                      </Typography>
-                    </Box>
-                  </Box>
-
-                  <Box
-                    display="flex"
-                    justifyContent="space-between"
-                    alignItems="center"
-                    gap={"8px"}
-                    mt={2}
-                  >
-                    <Box
-                      sx={{
-                        display: "flex",
-                        gap: "10px",
-                        alignItems: "center",
-                        justifyContent: "flex-end",
-                      }}
-                    >
-                      <IconButton
-                        sx={{
-                          backgroundColor: product.availability
-                            ? "inherit"
-                            : "#ccc",
-                          color: "#615e5e",
-                          padding: "0",
-                          cursor: product.availability
-                            ? "pointer"
-                            : "not-allowed",
-                        }}
-                        disabled={!product.availability}
-                        onClick={(e) => {
-                          e.stopPropagation(); // Prevent card click
-                          handleAddToCart(product, quantity[product.id] || 1);
-                        }}
-                      >
-                        <ShoppingCartOutlinedIcon sx={{ padding: "0" }} />
-                      </IconButton>
-
-                      <Typography>
-                        {product.availability ? "In Stock" : "Out of Stock"}
-                      </Typography>
-                    </Box>
-
-                    <Box>
-                      <IconButton
-                        color="error"
-                        onClick={(e) => {
-                          e.stopPropagation(); // Prevent card click
-                          handleOpenDialog(product.id); // Open dialog with product.id
-                        }}
-                      >
-                        <DeleteIcon />
-                      </IconButton>
-                    </Box>
-                  </Box>
-                </CardContent>
-              </Card>
+                  {product.name}
+                </Typography>
+              </Tooltip>
+              <Box
+                sx={{
+                  mt: 1,
+                  display: "flex",
+                  gap: "10px",
+                  alignItems: "center",
+                  flexWrap: "wrap",
+                }}
+              >
+                <Typography sx={{ fontSize: "12px" }}>
+                  SKU: {product.sku_number}
+                </Typography>
+                <Typography sx={{ fontSize: "12px" }}>
+                  MPN: {product.mpn_number}
+                </Typography>
+              </Box>
+              <Typography sx={{ mt: 1, fontSize: "12px" }}>
+                MSRP : {product.currency}
+                {product.msrp.toFixed(2)}
+              </Typography>
+              <Box
+                sx={{
+                  mt: 1,
+                  display: "flex",
+                  gap: "10px",
+                  alignItems: "center",
+                  flexWrap: "wrap",
+                }}
+              >
+                <Typography variant="body1" color="text.primary">
+                  {product.currency}
+                  {product.price.toFixed(2)}
+                </Typography>
+                <Typography
+                  variant="body2"
+                  color="text.secondary"
+                  style={
+                    product.price.toFixed(2) === product.was_price.toFixed(2)
+                      ? { textDecoration: "none" }
+                      : { textDecoration: "line-through" }
+                  }
+                >
+                  Was:{product.currency}
+                  {product.was_price.toFixed(2)}
+                </Typography>
+              </Box>
             </Box>
-          ))}
-        </Box>
-      )}
+            <Box
+              display="flex"
+              justifyContent="space-between"
+              alignItems="center"
+              gap={"8px"}
+              mt={2}
+            >
+              <Box
+                sx={{
+                  display: "flex",
+                  gap: "10px",
+                  alignItems: "center",
+                  justifyContent: "flex-end",
+                }}
+              >
+                <IconButton
+                  sx={{
+                    backgroundColor: product.availability ? "inherit" : "#ccc",
+                    color: "#615e5e",
+                    padding: "0",
+                    cursor: product.availability ? "pointer" : "not-allowed",
+                  }}
+                  disabled={!product.availability}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleAddToCart(product, quantity[product.id] || 1);
+                  }}
+                >
+                  <ShoppingCartOutlinedIcon sx={{ padding: "0" }} />
+                </IconButton>
+                <Typography>
+                  {product.availability ? "In Stock" : "Out of Stock"}
+                </Typography>
+              </Box>
+              <Box>
+                <IconButton
+                  color="error"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleOpenDialog(product.id);
+                  }}
+                >
+                  <DeleteIcon />
+                </IconButton>
+              </Box>
+            </Box>
+          </CardContent>
+        </Card>
+      </Box>
+    ))}
+  </Box>
+) : (
+  <Box sx={{ textAlign: "center", paddingTop: "50px" }}>
+    <Typography variant="h6" marginBottom={"20px"}>
+      Your Wishlist is Empty
+    </Typography>
+    <Button
+      variant="contained"
+      color="primary"
+      onClick={() => navigate("/dealer/products")}
+    >
+      Continue Shopping
+    </Button>
+  </Box>
+)}
+
 
       {/* Dialog for confirmation */}
       <Dialog open={openDialog} onClose={handleCloseDialog}>

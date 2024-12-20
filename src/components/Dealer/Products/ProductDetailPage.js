@@ -604,60 +604,66 @@ const ProductDetail = ({ fetchCartCount }) => {
             Related Products
           </Typography>
         </Box>
-       <Box sx={{ marginTop: "10px" }}>
-       {RelatedProducts.map((product) => (
-          <Grid item key={product.id}>
-            <Card 
-            onClick={() => handleProductClick(product.id)}
-            elevation={2} sx={{ display: 'flex', p: 1 , mb:2 , cursor: 'pointer'}} >
-              {/* Product Image */}
-             
-               <CardMedia
-              component="img"
-              sx={{ width: 120, height: 120, objectFit: 'contain', mr: 2 , pointerEvents: 'none' }}
-              image={
-                product.logo && product.logo.startsWith("http://example.com")
-                  ? soonImg // Use `soonImg` if the URL is `http://example.com`
-                  : product.logo.startsWith("http") || product.logo.startsWith("https")
-                  ? product.logo // Use `product.logo` if it's a valid URL
-                  : soonImg // Fallback to `soonImg` for all other cases
-              }
-              alt={product?.name}
-            />
-              {/* Product Info */}
-              <CardContent sx={{ flex: 1  , p:0 , pb:0}} style={{paddingBottom:0}}>
-                <Typography variant="body2" fontWeight="bold">
-                {product.name} </Typography>
-              <Box sx={{display:'flex' , columnGap:'10px' , flexWrap:'wrap' , margin:'5px 0px'}}>
+        <Box sx={{ marginTop: "10px" }}>
+  {RelatedProducts.length > 0 ? (
+    RelatedProducts.map((product) => (
+      <Grid item key={product.id}>
+        <Card 
+          onClick={() => handleProductClick(product.id)}
+          elevation={2} 
+          sx={{ display: 'flex', p: 1, mb: 2, cursor: 'pointer' }}
+        >
+          {/* Product Image */}
+          <CardMedia
+            component="img"
+            sx={{ width: 120, height: 120, objectFit: 'contain', mr: 2, pointerEvents: 'none' }}
+            image={
+              product.logo && product.logo.startsWith("http://example.com")
+                ? soonImg // Use `soonImg` if the URL is `http://example.com`
+                : product.logo.startsWith("http") || product.logo.startsWith("https")
+                ? product.logo // Use `product.logo` if it's a valid URL
+                : soonImg // Fallback to `soonImg` for all other cases
+            }
+            alt={product?.name}
+          />
+          {/* Product Info */}
+          <CardContent sx={{ flex: 1, p: 0, pb: 0 }}>
+            <Typography variant="body2" fontWeight="bold">
+              {product.name}
+            </Typography>
+            <Box sx={{ display: 'flex', columnGap: '10px', flexWrap: 'wrap', margin: '5px 0px' }}>
               <Typography variant="body2" color="textSecondary">
-                  SKU: {product.sku_number}
-                </Typography>
-                <Typography variant="body2" color="textSecondary">
-                  MPN: {product.mpn}
-                </Typography>
-                <Typography variant="body2" color="textSecondary">
-                  UPC: {product.upc_ean}
-                </Typography>
-                <Typography variant="body2" color="textSecondary">
-                  MSRP: ${product.msrp}
-                </Typography>
-              </Box>
-                <Box sx={{display:'flex' , gap:'10px' , flexWrap:'wrap'}}>
-                <Typography variant="body2" color="error" fontWeight="bold">
+                SKU: {product.sku_number}
+              </Typography>
+              <Typography variant="body2" color="textSecondary">
+                MPN: {product.mpn}
+              </Typography>
+              <Typography variant="body2" color="textSecondary">
+                UPC: {product.upc_ean}
+              </Typography>
+              <Typography variant="body2" color="textSecondary">
+                MSRP: ${product.msrp}
+              </Typography>
+            </Box>
+            <Box sx={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+              <Typography variant="body2" color="error" fontWeight="bold">
                 {product.currency}{product.price} ({product.discount}%)
-                </Typography>
+              </Typography>
+              <Typography variant="body2" sx={{ textDecoration: 'line-through' }}>
+                Was Price: ${product.was_price}
+              </Typography>
+            </Box>
+          </CardContent>
+        </Card>
+      </Grid>
+    ))
+  ) : (
+    <Typography variant="body2" color="textSecondary" textAlign="center">
+      No items found
+    </Typography>
+  )}
+</Box>
 
-                <Typography variant="body2" sx={{ textDecoration: 'line-through' }}>
-                  Was Price: ${product.was_price}
-                </Typography>
-                </Box>
-                
-              </CardContent>
-            </Card>
-          
-          </Grid>
-        ))}
-       </Box>
       </Grid>
       </Grid>
 
