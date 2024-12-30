@@ -1,14 +1,15 @@
+// src\components\Dealer\sidebar.js
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Box, Drawer, List, ListItem, ListItemButton, ListItemText, Divider } from '@mui/material';
 import Logout from '../Login/Logout'; 
 import { Dashboard, Receipt, Settings, ShoppingCart } from '@mui/icons-material'; 
-import ProductSidebar from './Products/ProductCategory';
+import ProductBrand from './Products/ProductBrands';
 
 
 const drawerWidth = 230;
 
-const Sidebar = () => {
+const Sidebar = ({industryId}) => {
     const location = useLocation(); // Get the current location (route)
 
     // Function to return active style based on the current route
@@ -66,7 +67,7 @@ const Sidebar = () => {
             {isProductsPage && (
                 <>
                     <Divider />
-                    <ProductSidebar /> {/* Render ProductSidebar if on products page */}
+                    <ProductBrand  industryId={industryId}/> {/* Render ProductSidebar if on products page */}
                 </>
             )}
 

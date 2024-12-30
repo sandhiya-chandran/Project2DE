@@ -35,11 +35,12 @@ import { tabsClasses } from "@mui/material/Tabs";
 import { useNavigate } from "react-router-dom";
 import FavoriteBorderIcon from "@mui/icons-material/FavoriteBorder";
 import FavoriteIcon from "@mui/icons-material/Favorite";
+import Sidebar from "../sidebar";
 
-const ProductList = ({ fetchCartCount }) => {
+const ProductList = ({ fetchCartCount , selectedBrandIds  }) => {
   const location = useLocation();
   const navigate = useNavigate();
-
+  
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -58,6 +59,7 @@ const ProductList = ({ fetchCartCount }) => {
   const [selectedCategoryId, setSelectedCategoryId] = useState(null); // Tracks the selected category ID
   const [industry, setIndustry] = useState(null); // Stores the selected industry object
   const [Category, setCategory] = useState(null); // Stores the selected Category object
+ 
   const [page, setPage] = useState(1); // Current page
   const [productsCount, setProductsCount] = useState([]);
   const [totalPages, setTotalPages] = useState(1); // Total pages
@@ -69,12 +71,15 @@ const ProductList = ({ fetchCartCount }) => {
   const [debounceTimer, setDebounceTimer] = useState(null);
   const debounceTimerRef = useRef(null);
 
+
+  console.log("Received Selected Brand IDs in ProductList:", selectedBrandIds);
   // Fetch Products
   useEffect(() => {
     if (
       selectedCategoryId ||
       industry ||
       selectedCategoryId === null ||
+
       industry === null
     ) {
       const fetchData = async () => {
@@ -89,7 +94,7 @@ const ProductList = ({ fetchCartCount }) => {
           }
 
           const productResponse = await axios.get(
-            `${process.env.REACT_APP_IP}obtainProductsListForDealer/?manufacture_unit_id=${manufactureUnitId}&product_category_id=${selectedCategoryId ? selectedCategoryId : ""}&industry_id=${industry?.id || ""}&skip=${(page - 1) * productsPerPage}&limit=${productsPerPage}&sort_by=price&sort_by_value=${sortByValue}&filters=all`
+            `${process.env.REACT_APP_IP}obtainProductsListForDealer/?manufacture_unit_id=${manufactureUnitId}&product_category_id=${selectedCategoryId ? selectedCategoryId : ""}&industry_id=${industry?.id || ""}&brand_id_list=${selectedBrandIds || ""}&skip=${(page - 1) * productsPerPage}&limit=${productsPerPage}&sort_by=price&sort_by_value=${sortByValue}&filters=all`
           );
           setProducts(productResponse.data.data || []);
           console.log(productResponse.data);
@@ -102,7 +107,7 @@ const ProductList = ({ fetchCartCount }) => {
 
       fetchData();
     }
-  }, [sortByValue, selectedCategoryId, industry, page]);
+  }, [sortByValue, selectedCategoryId, industry, page , selectedBrandIds]);
 
   // productCountForDealer
   useEffect(() => {
@@ -999,6 +1004,9 @@ const ProductList = ({ fetchCartCount }) => {
         product={selectedProduct}
         handleAddToCart={handleAddToCart}
       />
+
+     {/* <ProductBrand industryId={industry?.id} /> */}
+     <Sidebar industryId={industry?.id} />
     </div>
   );
 };
