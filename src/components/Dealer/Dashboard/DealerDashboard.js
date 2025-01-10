@@ -17,6 +17,7 @@ import ProductDetailPage from '../Products/ProductDetailPage';
 import DealerProfile from '../Dashboard/DealerProfile';
 import OrdersRedirect from '../Products/OrdersRedirect';
 import WishList from '../Products/Wishlist';
+import Test from '../Products/test';
 
 import { Button , Tooltip } from "@mui/material";
 import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
@@ -101,6 +102,7 @@ const DealerDashboard = () => {
            <Routes>
              <Route path="/" element={<DealerHome/>} />
              <Route path="orders" element={<Orders />} />
+             <Route path="test" element={<Test />} />
              <Route path="settings" element={<Settings/>} />
              <Route path="cart" element={<CartPage fetchCartCount={fetchCartCount} />} />
              <Route path="checkout" element={<CheckoutPage fetchCartCount={fetchCartCount} />} />

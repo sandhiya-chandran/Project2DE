@@ -19,16 +19,12 @@ import {
 } from "@mui/material";
 import { Edit, Delete, Home } from "@mui/icons-material";
 import { CameraAlt } from "@mui/icons-material";
-import BookmarkBorderSharpIcon from "@mui/icons-material/BookmarkBorderSharp";
 
-
-const DealerProfile = ({ userData, fetchUserDetails , setUserData, }) => {
-  
+const DealerProfile = ({ userData, fetchUserDetails, setUserData }) => {
   const user = JSON.parse(localStorage.getItem("user"));
   const [addressList, setAddressList] = useState([]);
   const [errors, setErrors] = useState({});
 
-  
   const [isEditable, setIsEditable] = useState(false);
   const [open, setOpen] = useState(false);
   const [newAddress, setNewAddress] = useState({
@@ -40,47 +36,47 @@ const DealerProfile = ({ userData, fetchUserDetails , setUserData, }) => {
     is_default: false,
   });
 
- 
-  
   useEffect(() => {
     if (!userData) {
       fetchUserDetails();
     }
   }, [userData, fetchUserDetails]);
 
-
-
   const validateFields = () => {
     const newErrors = {};
-  
-    if (!userData.first_name?.trim()) newErrors.first_name = "First Name is required.";
-    if (!userData.last_name?.trim()) newErrors.last_name = "Last Name is required.";
+
+    if (!userData.first_name?.trim())
+      newErrors.first_name = "First Name is required.";
+    if (!userData.last_name?.trim())
+      newErrors.last_name = "Last Name is required.";
     if (!userData.email?.trim() || !/\S+@\S+\.\S+/.test(userData.email)) {
       newErrors.email = "A valid Email is required.";
     }
-    if (!userData.mobile_number?.trim() || !/^\d{10}$/.test(userData.mobile_number)) {
+    if (
+      !userData.mobile_number?.trim() ||
+      !/^\d{10}$/.test(userData.mobile_number)
+    ) {
       newErrors.mobile_number = "A valid 10-digit Mobile Number is required.";
     }
-    if (!userData.company_name?.trim()) newErrors.company_name = "Company Name is required.";
-    
-  
+    if (!userData.company_name?.trim())
+      newErrors.company_name = "Company Name is required.";
+
     // Check if address list is empty
-  if (!userData?.address_obj_list || userData.address_obj_list.length === 0) {
-    newErrors.address = "Address list is empty. Please add at least one address.";
-    alert("Address list is empty. Please add at least one address.");
-  }
-  
+    if (!userData?.address_obj_list || userData.address_obj_list.length === 0) {
+      newErrors.address =
+        "Address list is empty. Please add at least one address.";
+      alert("Address list is empty. Please add at least one address.");
+    }
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0; // Return true if no errors
   };
-  
 
   const handleEdit = () => {
     setIsEditable(true);
   };
 
   const handleSave = async () => {
-
     if (!validateFields()) {
       return; // Stop saving if validation fails
     }
@@ -126,10 +122,9 @@ const DealerProfile = ({ userData, fetchUserDetails , setUserData, }) => {
       );
 
       // console.log(response.data);
-      
-      
+
       const fullName = `${userData.first_name} ${userData.last_name}`;
-     
+
       setIsEditable(false); // Disable editing after save
       fetchUserDetails();
     } catch (error) {
@@ -164,21 +159,23 @@ const DealerProfile = ({ userData, fetchUserDetails , setUserData, }) => {
       alert("Please fill out all required fields.");
       return;
     }
-  
+
     const newAddressWithDefault = {
       ...newAddress,
       id: Date.now().toString(),
-      is_default: userData.address_obj_list.some(address => address.is_default) 
-                  ? false  // If a default exists, set new address as non-default
-                  : true,  // Otherwise, make it the default
+      is_default: userData.address_obj_list.some(
+        (address) => address.is_default
+      )
+        ? false // If a default exists, set new address as non-default
+        : true, // Otherwise, make it the default
     };
-  
+
     // Add the new address to the existing list without altering the `is_default` of existing addresses
-    setUserData(prevState => ({
+    setUserData((prevState) => ({
       ...prevState,
       address_obj_list: [...prevState.address_obj_list, newAddressWithDefault],
     }));
-  
+
     // Reset the new address form state
     setNewAddress({
       street: "",
@@ -188,10 +185,10 @@ const DealerProfile = ({ userData, fetchUserDetails , setUserData, }) => {
       country: "",
       is_default: false,
     });
-  
+
     console.log("New address added:", newAddressWithDefault);
   };
-  
+
   const handleClickOpen = () => {
     setOpen(true); // Open the modal
   };
@@ -238,7 +235,7 @@ const DealerProfile = ({ userData, fetchUserDetails , setUserData, }) => {
       user_id: user.id,
       ware_house: false,
     });
-  
+
     if (result.success) {
       // Directly update the userData state to remove the address
       setUserData((prevData) => ({
@@ -247,36 +244,13 @@ const DealerProfile = ({ userData, fetchUserDetails , setUserData, }) => {
           (address) => address.id !== addressId
         ),
       }));
-  
+
       // Optionally, fetch updated user data
       fetchUserDetails();
     } else {
       alert(result.message);
     }
   };
-
-//   const handleMarkDefault = async (addressId) => {
-//   try {
-//     const updatedAddresses = userData.address_obj_list.map((address) => ({
-//       ...address,
-//       is_default: address.id === addressId,  // Only one address is default
-//     }));
-//     setUserData((prevState) => ({
-//       ...prevState,
-//       address_obj_list: updatedAddresses,
-//     }));
-
-//     // Make the backend call to persist changes
-//     await axios.post(`${process.env.REACT_APP_IP}setDefaultAddress/`, {
-//       user_id: user.id,
-//       default_address_id: addressId,
-//     });
-
-//     console.log("Default address updated successfully");
-//   } catch (error) {
-//     console.error("Error updating default address:", error);
-//   }
-// };
 
   // Conditionally render content based on userData
   if (!userData) {
@@ -346,8 +320,8 @@ const DealerProfile = ({ userData, fetchUserDetails , setUserData, }) => {
             variant="contained"
             color="primary"
             onClick={handleClickOpen}
-            disabled={!isEditable || (userData?.address_obj_list && userData.address_obj_list.length > 0)}
-            sx={{marginRight:'10px'}}
+            disabled={!isEditable}
+            sx={{ marginRight: "10px" }}
           >
             Add New Address
           </Button>
@@ -461,51 +435,45 @@ const DealerProfile = ({ userData, fetchUserDetails , setUserData, }) => {
           <Grid item xs={12} sm={6}>
             <Box>
               <div>
-              {userData?.address_obj_list && userData.address_obj_list.length > 0 ? (
-  <div style={{ marginTop: 20 }}>
-    {userData.address_obj_list.map((address) => (
-                        <Card key={address.id} style={{ marginBottom: 10 }}>
-                          <CardContent style={{ padding: "6px 10px" }}>
-                            <Typography variant="body2">
-                              {address.street}, {address.city}, {address.state},{" "}
-                              {address.zipCode}, {address.country}
-                            </Typography>
-                            <Box
-                              sx={{
-                                display: "flex",
-                                justifyContent: "flex-end",
-                                marginTop: "10px",
-                              }}
+                {userData?.address_obj_list &&
+                userData.address_obj_list.length > 0 ? (
+                  <div style={{ marginTop: 20 }}>
+                    {userData.address_obj_list.map((address) => (
+                      <Card key={address.id} style={{ marginBottom: 10 }}>
+                        <CardContent style={{ padding: "6px 10px" }}>
+                          <Typography variant="body2">
+                            {address.street}, {address.city}, {address.state},{" "}
+                            {address.zipCode}, {address.country}
+                          </Typography>
+                          <Box
+                            sx={{
+                              display: "flex",
+                              justifyContent: "flex-end",
+                              marginTop: "10px",
+                            }}
+                          >
+                            <IconButton
+                              color="error"
+                              disabled={!isEditable}
+                              onClick={() => handleDelete(address.address_id)}
                             >
-                              {/* <Tooltip title="Mark as Default" arrow>
-                                <IconButton
-                                  color={address.is_default ? "success" : "primary"}
-                                  disabled={!isEditable}
-                                  onClick={() => handleMarkDefault(address.id)}
-                                >
-                                  <BookmarkBorderSharpIcon />
-                                </IconButton>
-                              </Tooltip> */}
-
-                              <IconButton
-                                color="error"
-                                disabled={!isEditable}
-                                onClick={() => handleDelete(address.address_id)}
-                              >
-                                <Delete />
-                              </IconButton>
-                            </Box>
-                          </CardContent>
-                        </Card>
-                      ))}
-  </div>
-) : (
-  <Typography variant="body1" color="textSecondary" align="center" sx={{margin:'50px 0px'}}>
-    No addresses found. Please add a new address.
-  </Typography>
-)}
-
-               
+                              <Delete />
+                            </IconButton>
+                          </Box>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                ) : (
+                  <Typography
+                    variant="body1"
+                    color="textSecondary"
+                    align="center"
+                    sx={{ margin: "50px 0px" }}
+                  >
+                    No addresses found. Please add a new address.
+                  </Typography>
+                )}
               </div>
             </Box>
           </Grid>
@@ -519,7 +487,7 @@ const DealerProfile = ({ userData, fetchUserDetails , setUserData, }) => {
         <DialogTitle>Add New Address</DialogTitle>
         <DialogContent>
           <Box sx={{ display: "flex" }}>
-            <div style={{marginTop:'5px'}}>
+            <div style={{ marginTop: "5px" }}>
               <Grid container spacing={2}>
                 <Grid item xs={12} sm={6}>
                   <TextField

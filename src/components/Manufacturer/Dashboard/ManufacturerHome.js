@@ -8,6 +8,7 @@ import {
   CircularProgress
 } from "@mui/material";
 import { Bar, Line } from "react-chartjs-2";
+import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import {
   Chart as ChartJS,
@@ -34,6 +35,7 @@ ChartJS.register(
 );
 
 const ManufacturerHome = () => {
+  const navigate = useNavigate();
   const [error, setError] = useState(null);
   const [showAll, setShowAll] = useState(false);
   const [dashboardData, setDashboardData] = useState(null);
@@ -84,8 +86,8 @@ const ManufacturerHome = () => {
     labels: dashboardData?.top_selling_brands?.map((item) => item.brand_name) || [],
     datasets: [
       {
-        label: "Top Selling Brands",
-        data: dashboardData?.top_selling_brands?.map((item) => item.total_sales) || [],
+        label: "No of products sold",
+        data: dashboardData?.top_selling_brands?.map((item) => item.units_sold) || [],
         backgroundColor: "#42a5f5",
       },
     ],
@@ -95,8 +97,8 @@ const ManufacturerHome = () => {
     labels: dashboardData?.top_selling_categorys?.map((item) => item.category_name) || [],
     datasets: [
       {
-        label: "Top Selling Categories",
-        data: dashboardData?.top_selling_categorys?.map((item) => item.total_sales) || [],
+        label: "No of products sold",
+        data: dashboardData?.top_selling_categorys?.map((item) => item.units_sold) || [],
         borderColor: "#ff7043",
         fill: false,
         tension: 0.1,
@@ -104,18 +106,46 @@ const ManufacturerHome = () => {
     ],
   };
 
-  const chartOptions = {
-    responsive: true,
-    plugins: {
-      legend: {
-        position: "top",
-      },
-      title: {
-        display: true,
-        text: "Sales Overview",
-      },
-    },
+  // const chartOptions = {
+  //   responsive: true,
+  //   plugins: {
+  //     legend: {
+  //       position: "top",
+  //     },
+  //     title: {
+  //       display: true,
+  //       text: "No of products sold",
+  //     },
+  //   },
+  // };
+
+  
+
+  const handleProductClick = (productId) => {
+    if (!productId) {
+      console.error("Invalid productId");
+      return;
+    }
+    navigate(`/manufacturer/products/details/${productId}`);
   };
+
+  const handlePendingClick = () => {
+    navigate(`/manufacturer/orders?filter=Pending`);
+  };
+
+  const handleReorderClick = () => {
+    navigate(`/manufacturer/orders?filter=yes`);
+  };
+
+  const handleActiveBuyerClick = () => {
+    navigate(`/manufacturer/dealerList`);
+  };
+
+  const handleRowClick = (username) => {
+    navigate(`/manufacturer/dealer-details/${username}`);
+  };
+  
+  
 
   return (
     <Grid container spacing={3} sx={{ p: 3, marginBottom:'25px' }}>
@@ -128,7 +158,7 @@ const ManufacturerHome = () => {
         <>
           {/* Sales Overview Cards */}
           <Grid item xs={12} sm={6} md={3}>
-            <Card sx={{ backgroundColor: "#ffffff", color: "#1565c0", textAlign: "center", p: 2 }}>
+            <Card   sx={{ backgroundColor: "#ffffff", color: "#1565c0", textAlign: "center", p: 2 }}>
               <CardContent>
                 <Typography sx={{ fontSize: "16px", fontWeight: 'bold' }} >Total Sales</Typography>
                 <Typography sx={{ fontSize: "14px" }} >${dashboardData?.total_sales || "0"}</Typography>
@@ -137,16 +167,16 @@ const ManufacturerHome = () => {
           </Grid>
 
           <Grid item xs={12} sm={6} md={3}>
-            <Card sx={{ backgroundColor: "#ffffff", color: "#66bb6a", textAlign: "center", p: 2 }}>
+            <Card onClick={() => handleActiveBuyerClick()}   sx={{ cursor:'pointer' , backgroundColor: "#ffffff", color: "#66bb6a", textAlign: "center", p: 2 }}>
               <CardContent>
-                <Typography sx={{ fontSize: "16px", fontWeight: 'bold' }}  >Active Users</Typography>
+                <Typography sx={{ fontSize: "16px", fontWeight: 'bold' }}  >Active Buyers</Typography>
                 <Typography sx={{ fontSize: "14px" }} >{dashboardData?.dealer_count || "0"}</Typography>
               </CardContent>
             </Card>
           </Grid>
 
           <Grid item xs={12} sm={6} md={3}>
-            <Card sx={{ backgroundColor: "#ffffff", color: "#ffa726", textAlign: "center", p: 2 }}>
+            <Card onClick={() => handleReorderClick()} sx={{cursor:'pointer' , backgroundColor: "#ffffff", color: "#ffa726", textAlign: "center", p: 2 }}>
               <CardContent>
                 <Typography sx={{ fontSize: "16px", fontWeight: 'bold' }} >Re-Orders</Typography>
                 <Typography sx={{ fontSize: "14px" }} >{dashboardData?.re_order_count || "0"}</Typography>
@@ -155,7 +185,7 @@ const ManufacturerHome = () => {
           </Grid>
 
           <Grid item xs={12} sm={6} md={3}>
-            <Card sx={{ backgroundColor: "#ffffff", color: "#ef5350", textAlign: "center", p: 2 }}>
+            <Card onClick={() => handlePendingClick()} sx={{ cursor:'pointer' , backgroundColor: "#ffffff", color: "#ef5350", textAlign: "center", p: 2 }}>
               <CardContent>
                 <Typography sx={{ fontSize: "16px", fontWeight: 'bold' }} >Pending Orders</Typography>
                 <Typography sx={{ fontSize: "14px" }} >{dashboardData?.pending_order_count || "0"}</Typography>
@@ -169,15 +199,16 @@ const ManufacturerHome = () => {
               <Typography variant="h7" sx={{ mb: 2, fontWeight: "bold" }}>
                 Top Selling Brands
               </Typography>
-              <Bar data={barChartData} options={chartOptions} />
+              <Bar data={barChartData}  />
             </Paper>
           </Grid>
+
           <Grid item xs={12} md={6}>
             <Paper elevation={3} sx={{ p: 2 }}>
               <Typography variant="h7" sx={{ mb: 2, fontWeight: "bold" }}>
                 Top Selling Categories
               </Typography>
-              <Line data={lineChartData} options={chartOptions} />
+              <Line data={lineChartData}  />
             </Paper>
           </Grid>
 
@@ -212,6 +243,7 @@ const ManufacturerHome = () => {
                     dashboardData?.top_selling_products?.map((product) => (
                       <Grid item xs={3} sm={3} md={3} key={product.id}>
                         <Card
+                           onClick={() => handleProductClick(product.product_id)}
                           sx={{
                             display: "flex",
                             flexDirection: "column",
@@ -220,6 +252,7 @@ const ManufacturerHome = () => {
                             width: "100px",
                             height: "110px",
                             position: "relative",
+                            cursor:'pointer'
                           }}
                         >
                           {/* Brand Logo */}
@@ -273,7 +306,7 @@ const ManufacturerHome = () => {
             {/* Total Dealers Section */}
             <Grid item xs={12} md={3}>
               <Typography variant="h7" sx={{ mb: 2, fontWeight: "bold" }}>
-                Top Dealers
+                Top Buyers
               </Typography>
 
               <Paper
@@ -300,7 +333,8 @@ const ManufacturerHome = () => {
 
                   {dealerOrderData?.total_dealer_list?.map((dealer) => (
                     <Grid item xs={12} sm={12} md={12} key={dealer.id}>
-                      <Card sx={{ p: 2, overflow: "hidden" }}>
+                      <Card sx={{ p: 2, overflow: "hidden" }} onClick={() => handleRowClick(dealer.id)}>
+
                         <Typography
                           variant="h6"
                           sx={{

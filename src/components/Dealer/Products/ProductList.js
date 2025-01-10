@@ -37,10 +37,10 @@ import FavoriteBorderIcon from "@mui/icons-material/FavoriteBorder";
 import FavoriteIcon from "@mui/icons-material/Favorite";
 import Sidebar from "../sidebar";
 
-const ProductList = ({ fetchCartCount , selectedBrandIds  }) => {
+const ProductList = ({ fetchCartCount, selectedBrandIds }) => {
   const location = useLocation();
   const navigate = useNavigate();
-  
+
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -59,18 +59,18 @@ const ProductList = ({ fetchCartCount , selectedBrandIds  }) => {
   const [selectedCategoryId, setSelectedCategoryId] = useState(null); // Tracks the selected category ID
   const [industry, setIndustry] = useState(null); // Stores the selected industry object
   const [Category, setCategory] = useState(null); // Stores the selected Category object
- 
+
   const [page, setPage] = useState(1); // Current page
   const [productsCount, setProductsCount] = useState([]);
   const [totalPages, setTotalPages] = useState(1); // Total pages
   const productsPerPage = 100; // Number of products per page
 
   const [wishlistProducts, setWishlistProducts] = useState([]);
+  const [isInWishlist, setIsInWishlist] = useState(false);
 
   const userData = localStorage.getItem("user");
   const [debounceTimer, setDebounceTimer] = useState(null);
   const debounceTimerRef = useRef(null);
-
 
   console.log("Received Selected Brand IDs in ProductList:", selectedBrandIds);
   // Fetch Products
@@ -79,7 +79,6 @@ const ProductList = ({ fetchCartCount , selectedBrandIds  }) => {
       selectedCategoryId ||
       industry ||
       selectedCategoryId === null ||
-
       industry === null
     ) {
       const fetchData = async () => {
@@ -107,7 +106,7 @@ const ProductList = ({ fetchCartCount , selectedBrandIds  }) => {
 
       fetchData();
     }
-  }, [sortByValue, selectedCategoryId, industry, page , selectedBrandIds]);
+  }, [sortByValue, selectedCategoryId, industry, page, selectedBrandIds]);
 
   // productCountForDealer
   useEffect(() => {
@@ -338,58 +337,6 @@ const ProductList = ({ fetchCartCount , selectedBrandIds  }) => {
     }
   };
 
-  const handleAddToWishList = async (product) => {
-    try {
-      const userData = localStorage.getItem("user");
-      if (!userData) {
-        console.error("No user logged in");
-        return;
-      }
-  
-      const user = JSON.parse(userData);
-      const userId = user.id;
-  
-      // Optimistically update the wishlist state before the API call
-      setWishlistProducts((prev) => [...prev, product.id]);
-  
-      // Send POST request to add the product to the wishlist
-      const response = await axios.post(
-        `${process.env.REACT_APP_IP}createWishList/`,
-        {
-          user_id: userId,
-          product_id: product.id,
-        }
-      );
-  
-      console.log("Product added to wishlist", response.data);
-    } catch (error) {
-      console.error("Error adding item to WishList:", error);
-  
-      // If the API call fails, remove the product from the wishlist state
-      setWishlistProducts((prev) => prev.filter((id) => id !== product.id));
-    }
-  };
-  
-  const handleRemoveFromWishList = async (product) => {
-    try {
-      // Optimistically update the wishlist state before the API call
-      setWishlistProducts((prev) => prev.filter((id) => id !== product.id));
-  
-      // Send GET request to delete the product from the wishlist
-      const response = await axios.get(
-        `${process.env.REACT_APP_IP}deleteWishlist/?wish_list_id=${product.wishlist_id}`
-      );
-  
-      console.log("Product removed from wishlist", response.data);
-    } catch (error) {
-      console.error("Error removing item from WishList:", error);
-  
-      // If the API call fails, add the product back to the wishlist state
-      setWishlistProducts((prev) => [...prev, product.id]);
-    }
-  };
-  
-
   const handleSortChange = (value) => {
     setSortByValue(value);
 
@@ -480,6 +427,53 @@ const ProductList = ({ fetchCartCount , selectedBrandIds  }) => {
     });
   };
 
+  const addToWishlist = async (productId) => {
+    const user = JSON.parse(userData);
+    const userId = user.id;
+  
+    try {
+      const response = await axios.post(`${process.env.REACT_APP_IP}createWishList/`, { user_id: userId, product_id: productId });
+      
+      const updatedProducts = products.map((product) =>
+        product.id === productId
+          ? {
+              ...product, 
+              is_wishlist: true, // Set is_wishlist to true
+              wishlist_id: response.data.data.wishlist_id || null // Update with the wishlist ID from the response
+            }
+          : product
+      );
+  
+      setProducts(updatedProducts); // Update the state with the updated product
+  
+      console.log("Wishlist ID:", response.data.data.wishlist_id);
+      console.log("Wishlist Boolean:", response.data.data.is_created);
+      console.log("Wishlist added:", response.data);
+      console.log("Wishlist products:", updatedProducts);
+  
+    } catch (err) {
+      console.error("Error adding to wishlist:", err);
+      alert("Failed to add item to wishlist. Please try again.");
+    }
+  };
+  
+  
+  const removeFromWishlist = async (wishlistId, productId) => {
+    try {
+      await axios.get(`${process.env.REACT_APP_IP}deleteWishlist/`, { params: { wish_list_id: wishlistId } });
+      const updatedProducts = products.map((product) =>
+        product.id === productId ? { ...product, is_wishlist: false, wishlist_id: null } : product
+      );
+      setProducts(updatedProducts); // Update product state without wishlist ID
+    } catch (err) {
+      console.error("Error removing from wishlist:", err);
+      alert("Failed to remove item from wishlist. Please try again.");
+    }
+  };
+  
+
+
+
   if (loading)
     return (
       <Box
@@ -499,187 +493,211 @@ const ProductList = ({ fetchCartCount , selectedBrandIds  }) => {
   // src\components\Dealer\Products\ProductList.js - Continue
 
   return (
-    <div style={{ margin: "10px" }}>
-      <Box sx={{ maxWidth: "80vw", margin: "0 auto" }}>
-        <Box
-          sx={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "flex-end",
-            gap: "10px",
-            mt: 2,
-            mb: 2,
-          }}
-        >
-          <Tabs
-            value={value}
-            onChange={handleChange}
-            variant="scrollable"
-            scrollButtons
-            TabIndicatorProps={{ style: { display: "none" } }}
+    <div>
+      <Box
+        sx={{
+          backgroundColor: "white",
+          position: "sticky",
+          top: "56px",
+          padding: "10px 0px",
+          zIndex: 9,
+        }}
+      >
+        <Box sx={{ maxWidth: "80vw", margin: "0 auto" }}>
+          <Box
             sx={{
-              [`& .${tabsClasses.scrollButtons}`]: {
-                "&.Mui-disabled": { opacity: 0.3 },
-                width: "20px",
-              },
               display: "flex",
               alignItems: "center",
+              justifyContent: "flex-end",
+              gap: "10px",
+              mt: 2,
+              mb: 2,
             }}
           >
-            {categories.length > 0 ? (
-              categories.map((tab, index) => (
-                <Tab
-                  key={tab.id}
-                  disableRipple
-                  label={tab.name}
-                  sx={{
-                    fontSize: "12px",
-                    textTransform: "capitalize",
-                    borderRadius: "50px",
-                    padding: "0px 15px",
-                    border: "1px solid",
-                    borderColor: value === index ? "primary.main" : "grey.400",
-                    color: value === index ? "white" : "text.primary",
-                    transition: "all 0.3s",
-                    margin: "0px 5px",
-                    minHeight: "30px",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                  }}
-                />
-              ))
-            ) : (
-              <Typography variant="body2" sx={{ padding: "10px" }}>
-                No category and products available under this Industry
-              </Typography>
-            )}
-          </Tabs>
+            <Tabs
+              value={value}
+              onChange={handleChange}
+              variant="scrollable"
+              scrollButtons
+              TabIndicatorProps={{ style: { display: "none" } }}
+              sx={{
+                [`& .${tabsClasses.scrollButtons}`]: {
+                  "&.Mui-disabled": { opacity: 0.3 },
+                  width: "20px",
+                },
+                display: "flex",
+                alignItems: "center",
+              }}
+            >
+              {categories.length > 0 ? (
+                categories.map((tab, index) => (
+                  <Tab
+                    key={tab.id}
+                    disableRipple
+                    label={tab.name}
+                    sx={{
+                      fontSize: "12px",
+                      textTransform: "capitalize",
+                      borderRadius: "50px",
+                      padding: "0px 15px",
+                      border: "1px solid",
+                      borderColor:
+                        value === index ? "primary.main" : "grey.400",
+                      color: value === index ? "white" : "text.primary",
+                      transition: "all 0.3s",
+                      margin: "0px 5px",
+                      minHeight: "30px",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                    }}
+                  />
+                ))
+              ) : (
+                <Typography variant="body2" sx={{ padding: "10px" }}>
+                  No category and products available under this Industry
+                </Typography>
+              )}
+            </Tabs>
 
-          <Box>
-            <FormControl fullWidth sx={{ minWidth: "200px" }}>
-              <Select
-                sx={{ fontSize: "14px" }}
-                id="industry-select"
-                value={industry ? industry.id : ""}
-                onChange={handleIndustryChange}
-                displayEmpty
-                placeholder="Select Industry" // This will act as a placeholder
-              >
-                <MenuItem disabled sx={{ fontSize: "14px" }} value="">
-                  Select Industry
-                </MenuItem>
-                {industryList.length > 0 ? (
-                  industryList.map((item) => (
-                    <MenuItem
-                      sx={{ fontSize: "14px" }}
-                      key={item.id}
-                      value={item.id}
-                    >
-                      {item.name}
-                    </MenuItem>
-                  ))
-                ) : (
-                  <MenuItem disabled>
-                    <em>No industry available</em>
+            <Box>
+              <FormControl fullWidth sx={{ minWidth: "200px" }}>
+                <Select
+                  sx={{ fontSize: "14px" }}
+                  id="industry-select"
+                  value={industry ? industry.id : ""}
+                  onChange={handleIndustryChange}
+                  displayEmpty
+                  placeholder="Select Industry" // This will act as a placeholder
+                >
+                  <MenuItem disabled sx={{ fontSize: "14px" }} value="">
+                    Select Industry
                   </MenuItem>
-                )}
-              </Select>
-            </FormControl>
+                  {industryList.length > 0 ? (
+                    industryList.map((item) => (
+                      <MenuItem
+                        sx={{ fontSize: "14px" }}
+                        key={item.id}
+                        value={item.id}
+                      >
+                        {item.name}
+                      </MenuItem>
+                    ))
+                  ) : (
+                    <MenuItem disabled>
+                      <em>No industry available</em>
+                    </MenuItem>
+                  )}
+                </Select>
+              </FormControl>
+            </Box>
           </Box>
-        </Box>
-      </Box>
-
-      <Box
-        display="flex"
-        flexWrap="wrap"
-        justifyContent="space-between"
-        marginBottom={"25px"}
-        gap={1}
-      >
-        <Box display="flex" flexWrap="wrap" justifyContent="flex-start" gap={1}>
-          <Button
-            onClick={() => handleSortChange(1)}
-            sx={{
-              fontSize: "11px",
-              fontWeight: 500,
-              padding: "3px 10px",
-              textTransform: "none",
-              backgroundColor: sortByValue === 1 ? "primary.main" : "#d3d3d38c",
-              borderRadius: "25px",
-              color: sortByValue === 1 ? "white" : "black",
-            }}
-          >
-            Price Low to High
-          </Button>
-          <Button
-            onClick={() => handleSortChange(-1)}
-            sx={{
-              fontSize: "11px",
-              fontWeight: 500,
-              padding: "3px 10px",
-              textTransform: "none",
-              backgroundColor:
-                sortByValue === -1 ? "primary.main" : "#d3d3d38c",
-              borderRadius: "25px",
-              color: sortByValue === -1 ? "white" : "black",
-            }}
-          >
-            Price High to Low
-          </Button>
         </Box>
 
         <Box
           display="flex"
           flexWrap="wrap"
-          gap={1}
           justifyContent="space-between"
+          marginBottom={"25px"}
+          gap={1}
+          sx={{ margin: "0px 20px" }}
         >
-          <TextField
-            placeholder="Search Products"
-            value={searchQuery}
-            onChange={handleSearchChange}
-            InputProps={{
-              endAdornment: searchQuery && (
-                <InputAdornment position="end">
-                  <IconButton
-                    onClick={() => {
-                      setSearchQuery(""); // Clear the search query state
+          <Box
+            display="flex"
+            flexWrap="wrap"
+            justifyContent="flex-start"
+            gap={1}
+          >
+            <Button
+              onClick={() => handleSortChange(1)}
+              sx={{
+                fontSize: "11px",
+                fontWeight: 500,
+                padding: "3px 10px",
+                textTransform: "none",
+                backgroundColor:
+                  sortByValue === 1 ? "primary.main" : "#d3d3d38c",
+                borderRadius: "25px",
+                color: sortByValue === 1 ? "white" : "black",
+              }}
+            >
+              Price Low to High
+            </Button>
+            <Button
+              onClick={() => handleSortChange(-1)}
+              sx={{
+                fontSize: "11px",
+                fontWeight: 500,
+                padding: "3px 10px",
+                textTransform: "none",
+                backgroundColor:
+                  sortByValue === -1 ? "primary.main" : "#d3d3d38c",
+                borderRadius: "25px",
+                color: sortByValue === -1 ? "white" : "black",
+              }}
+            >
+              Price High to Low
+            </Button>
+          </Box>
 
-                      // Navigate to the same page without passing the searchQuery in location.state
-                      navigate(location.pathname, {
-                        replace: true, // Ensures that the current entry in history is replaced
-                        state: {
-                          ...location.state, // Retain other location state values if any
-                          searchQuery: "", // Clear the searchQuery in location.state
-                        },
-                      });
-                    }}
-                    size="small"
-                  >
-                    <ClearIcon />
-                  </IconButton>
-                </InputAdornment>
-              ),
-            }}
-            sx={{
-              width: "250px",
-              "& .MuiOutlinedInput-input": {
-                padding: "5px 10px",
-                fontSize: "12px",
-              },
-              "& .MuiOutlinedInput-root": {
-                paddingRight: 0, // Removes padding-right
-              },
-            }}
-          />
-          <Button sx={{ p: 0, textTransform: "none", color: "black" }}>
-            Total {searchQuery ? searchResults.length : productsCount} Products
-          </Button>
+          <Box
+            display="flex"
+            flexWrap="wrap"
+            gap={1}
+            justifyContent="space-between"
+          >
+            <TextField
+              placeholder="Search Products"
+              value={searchQuery}
+              onChange={handleSearchChange}
+              InputProps={{
+                endAdornment: searchQuery && (
+                  <InputAdornment position="end">
+                    <IconButton
+                      onClick={() => {
+                        setSearchQuery(""); // Clear the search query state
+
+                        // Navigate to the same page without passing the searchQuery in location.state
+                        navigate(location.pathname, {
+                          replace: true, // Ensures that the current entry in history is replaced
+                          state: {
+                            ...location.state, // Retain other location state values if any
+                            searchQuery: "", // Clear the searchQuery in location.state
+                          },
+                        });
+                      }}
+                      size="small"
+                    >
+                      <ClearIcon />
+                    </IconButton>
+                  </InputAdornment>
+                ),
+              }}
+              sx={{
+                width: "250px",
+                "& .MuiOutlinedInput-input": {
+                  padding: "5px 10px",
+                  fontSize: "12px",
+                },
+                "& .MuiOutlinedInput-root": {
+                  paddingRight: 0, // Removes padding-right
+                },
+              }}
+            />
+            <Button sx={{ p: 0, textTransform: "none", color: "black" }}>
+              Total {searchQuery ? searchResults.length : productsCount}{" "}
+              Products
+            </Button>
+          </Box>
         </Box>
       </Box>
-
-      <Box display="flex" flexWrap="wrap" gap={3} justifyContent="flex-start">
+      <Box
+        display="flex"
+        flexWrap="wrap"
+        gap={3}
+        justifyContent="flex-start"
+        sx={{ margin: "20px 20px" }}
+      >
         {searchLoading ? (
           // Show a loading spinner for search results while data is being fetched
           <Box
@@ -779,34 +797,24 @@ const ProductList = ({ fetchCartCount , selectedBrandIds  }) => {
                   </Box>
 
                   <Box position="absolute" bottom={4} right={8}>
-                    <Tooltip
-                      title={
-                        wishlistProducts.includes(product.id)
-                          ? "Remove from wishlist"
-                          : "Add to wishlist"
-                      }
-                      arrow
-                    >
-                      {wishlistProducts.includes(product.id) ||
-                      product.is_wishlist ? (
-                        <FavoriteIcon
-                          sx={{ color: "#ff4081", cursor: "pointer" }} // Pink color for wishlist items
-                          onClick={(e) => {
-                            e.stopPropagation(); // Prevent card click
-                            handleRemoveFromWishList(product); // Remove from wishlist
-                          }}
-                        />
-                      ) : (
-                        <FavoriteBorderIcon
-                          sx={{ color: "#615e5e", cursor: "pointer" }} // Gray color for non-wishlist items
-                          onClick={(e) => {
-                            e.stopPropagation(); // Prevent card click
-                            handleAddToWishList(product); // Add to wishlist
-                          }}
-                        />
-                      )}
-                    </Tooltip>
+                  <IconButton
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (product.is_wishlist) {
+                      removeFromWishlist(product.wishlist_id, product.id);
+                    } else {
+                      addToWishlist(product.id);
+                    }
+                  }}
+                >
+                  {product.is_wishlist ? (
+                    <FavoriteIcon sx={{ color: '#f2419b' , fontSize:'20px' }} />
+                  ) : (
+                    <FavoriteBorderIcon sx={{fontSize:'20px'}} />
+                  )}
+                </IconButton>
                   </Box>
+
 
                   <Tooltip title="Quick View" arrow>
                     <PostAddIcon
@@ -1005,8 +1013,8 @@ const ProductList = ({ fetchCartCount , selectedBrandIds  }) => {
         handleAddToCart={handleAddToCart}
       />
 
-     {/* <ProductBrand industryId={industry?.id} /> */}
-     <Sidebar industryId={industry?.id} />
+      {/* <ProductBrand industryId={industry?.id} /> */}
+      <Sidebar industryId={industry?.id} />
     </div>
   );
 };

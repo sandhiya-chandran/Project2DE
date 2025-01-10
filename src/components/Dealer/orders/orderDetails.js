@@ -19,7 +19,7 @@ import {
   ListItemText,
   Modal,
   IconButton,
-  Tooltip,
+  Tooltip,  Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle 
 } from "@mui/material";
 import { useLocation } from "react-router-dom";
 import axios from "axios";
@@ -40,13 +40,15 @@ const getButtonStyles = (paymentStatus) => {
   return {};
 };
 
-
 const OrderDetailPage = () => {
   const navigate = useNavigate();
   const [orderDetails, setOrderDetails] = useState(null);
   const [previewImage, setPreviewImage] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isReorderSuccess, setIsReorderSuccess] = useState(false);
+  const [isReorderError, setIsReorderError] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [isReorderDialogOpen, setIsReorderDialogOpen] = useState(false);
 
   const userData = localStorage.getItem("user");
   const userId = userData ? JSON.parse(userData).manufacture_unit_id : "";
@@ -81,6 +83,35 @@ const OrderDetailPage = () => {
     fetchOrderDetails();
   }, [orderId, userId]);
 
+   // Handler to open the confirmation dialog
+   const handleReorderClick = () => {
+    setIsReorderDialogOpen(true);
+  };
+
+  // Handler to close the confirmation dialog
+  const handleReorderCancel = () => {
+    setIsReorderDialogOpen(false);
+  };
+
+  const handleReorder = async () => {
+    setIsReorderDialogOpen(false);
+    try {
+      const response = await axios.post(
+        `${process.env.REACT_APP_IP}createReorder/`,
+        {
+          order_id: orderId,
+        }
+      );
+      if (response.status === 200) {
+        setIsReorderSuccess(true);
+        navigate("/dealer/checkoutRedirect");
+      }
+    } catch (error) {
+      console.error("Reorder API error:", error);
+      setIsReorderError(true);
+    }
+  };
+
   const generateInvoice = () => {
     const element = document.getElementById("invoice");
     html2canvas(element, {
@@ -98,7 +129,6 @@ const OrderDetailPage = () => {
     });
   };
 
-  
   const handlePayment = (orderId) => {
     console.log("PaymentConfirm ID: ", orderId);
     navigate("/dealer/paymentConfirm", { state: { orderId } });
@@ -123,7 +153,6 @@ const OrderDetailPage = () => {
     total_items,
     total_amount,
     currency,
-    product_list,
   } = orderDetails;
 
   return (
@@ -138,25 +167,30 @@ const OrderDetailPage = () => {
           Download Invoice
         </Button>
         <Button
-                      variant="outlined"
-                      color="primary"
-                      sx={{
-                        m: 1,
-                        ...getButtonStyles(orderDetails.payment_status),
-                        
-                      }}
-                      onClick={() => handlePayment(orderDetails.id)}
-                      disabled={
-                        orderDetails.payment_status === "paid" ||
-                        orderDetails.payment_status === "completed"
-                      }
-                    >
-                      Confirm Payment
-                    </Button>
+          variant="outlined"
+          color="primary"
+          sx={{
+            m: 1,
+            ...getButtonStyles(orderDetails.payment_status),
+          }}
+          onClick={() => handlePayment(orderDetails.id)}
+          disabled={
+            orderDetails.payment_status === "paid" ||
+            orderDetails.payment_status === "completed"
+          }
+        >
+          Confirm Payment
+        </Button>
         <Button disabled variant="outlined" color="primary" sx={{ m: 1 }}>
           Track Order
         </Button>
-        <Button disabled variant="outlined" color="primary" sx={{ m: 1 }}>
+        <Button
+          // onClick={handleReorder}
+          onClick={handleReorderClick}
+          variant="outlined"
+          color="primary"
+          sx={{ m: 1 }}
+        >
           Reorder
         </Button>
         <Button disabled variant="outlined" color="primary" sx={{ m: 1 }}>
@@ -168,7 +202,8 @@ const OrderDetailPage = () => {
         <Grid container spacing={3}>
           {/* Order Summary */}
           <Grid item xs={12} sm={6}>
-            <Card sx={{
+            <Card
+              sx={{
                 height: "350px",
                 overflowY: "auto", // Default to auto
                 ...(350 > 350 && { overflowY: "scroll" }), // Example logic, replace 350 > 350 with actual condition
@@ -176,56 +211,57 @@ const OrderDetailPage = () => {
                   width: "3px", // Scrollbar width
                 },
                 "&::-webkit-scrollbar-thumb": {
-                  backgroundColor: "#888", // Thumb color
+                  backgroundColor: "#888", // </div>Thumb color
                   borderRadius: "10px", // Rounded scrollbar thumb
                 },
                 "&::-webkit-scrollbar-thumb:hover": {
                   backgroundColor: "#555", // Hover effect
                 },
-              }}>
+              }}
+            >
               <CardContent>
-                <Typography sx={{ fontSize: '16px' }} fontWeight="bold" mb={2}>
+                <Typography sx={{ fontSize: "16px" }} fontWeight="bold" mb={2}>
                   Order Summary
                 </Typography>
                 <Divider sx={{ my: 1 }} />
-                <Typography sx={{ fontSize: '14px' }}>
+                <Typography sx={{ fontSize: "14px" }}>
                   <strong>Order ID: </strong>
                   {order_id}
                 </Typography>
-                <Typography sx={{ fontSize: '14px' }}>
+                <Typography sx={{ fontSize: "14px" }}>
                   <strong>Customer Name: </strong>
                   {name}
                 </Typography>
-                <Typography sx={{ fontSize: '14px' }}>
+                <Typography sx={{ fontSize: "14px" }}>
                   <strong>Email: </strong>
                   {email}
                 </Typography>
-                <Typography sx={{ fontSize: '14px' }}>
+                <Typography sx={{ fontSize: "14px" }}>
                   <strong>Mobile: </strong>
                   {mobile_number}
                 </Typography>
-                <Typography sx={{ fontSize: '14px' }}>
+                <Typography sx={{ fontSize: "14px" }}>
                   <strong>Order Date: </strong>
                   {new Date(placed_on).toLocaleString()}
                 </Typography>
-                <Typography sx={{ fontSize: '14px' }}>
+                <Typography sx={{ fontSize: "14px" }}>
                   <strong>Total Items: </strong>
                   {total_items}
                 </Typography>
-                <Typography sx={{ fontSize: '14px' }}>
+                <Typography sx={{ fontSize: "14px" }}>
                   <strong>Order Value: </strong>
                   {currency}
                   {total_amount}
                 </Typography>
-                <Typography sx={{ fontSize: '14px' }}>
+                <Typography sx={{ fontSize: "14px" }}>
                   <strong>Delivery Status: </strong>
                   {delivery_status}
                 </Typography>
-                <Typography sx={{ fontSize: '14px' }}>
+                <Typography sx={{ fontSize: "14px" }}>
                   <strong>Payment Status: </strong>
                   {payment_status}
                 </Typography>
-                <Typography sx={{ fontSize: '14px' }}>
+                <Typography sx={{ fontSize: "14px" }}>
                   <strong>Fulfilled Status: </strong>
                   {fulfilled_status}
                 </Typography>
@@ -253,7 +289,12 @@ const OrderDetailPage = () => {
               }}
             >
               <CardContent>
-                <Typography sx={{ fontSize: '16px' }} variant="h6" fontWeight="bold" mb={2}>
+                <Typography
+                  sx={{ fontSize: "16px" }}
+                  variant="h6"
+                  fontWeight="bold"
+                  mb={2}
+                >
                   Transaction History
                 </Typography>
                 <Divider sx={{ my: 1 }} />
@@ -262,47 +303,48 @@ const OrderDetailPage = () => {
                     orderDetails.transaction_list.map((transaction, index) => (
                       <ListItem key={index} sx={{ p: 0, mb: 2 }}>
                         <Box sx={{ width: "100%" }}>
-                          <Typography  sx={{ fontSize: '14px' }}>{`Transaction ${index + 1}`}</Typography>
-                          <Typography sx={{ fontSize: '14px' }}>
+                          <Typography
+                            sx={{ fontSize: "14px" }}
+                          >{`Transaction ${index + 1}`}</Typography>
+                          <Typography sx={{ fontSize: "14px" }}>
                             <strong>Payment Date: </strong>
                             {new Date(
                               transaction.transaction_date
                             ).toLocaleString()}
                           </Typography>
-                          <Typography sx={{ fontSize: '14px' }}>
+                          <Typography sx={{ fontSize: "14px" }}>
                             <strong>Status: </strong>
                             {transaction.status}
                           </Typography>
-                          <Typography sx={{ fontSize: '14px' }}>
+                          <Typography sx={{ fontSize: "14px" }}>
                             <strong>Payment Reviewed Date: </strong>
                             {new Date(
                               transaction.updated_date
                             ).toLocaleString()}
                           </Typography>
-                          <Typography sx={{ fontSize: '14px' }}>
+                          <Typography sx={{ fontSize: "14px" }}>
                             <strong>Payment Proof: </strong>
                             <div>
-                            <Tooltip title="Click to Preview" arrow>
-                            <img
-                                src={`data:image/png;base64,${transaction.payment_proof}`}
-                                alt="Payment Proof"
-                                className="thumbnail"
-                                style={{
-                                  width: 50,
-                                  height: 50,
-                                  cursor: "pointer",
-                                  objectFit:'contain',
-                                  border:'1px solid lightgray',
-                                  borderRadius:'5px'
-                                }}
-                                onClick={() =>
-                                  handlePreview(
-                                    `data:image/png;base64,${transaction.payment_proof}`
-                                  )
-                                }
-                              />
-                      </Tooltip>
-                             
+                              <Tooltip title="Click to Preview" arrow>
+                                <img
+                                  src={`data:image/png;base64,${transaction.payment_proof}`}
+                                  alt="Payment Proof"
+                                  className="thumbnail"
+                                  style={{
+                                    width: 50,
+                                    height: 50,
+                                    cursor: "pointer",
+                                    objectFit: "contain",
+                                    border: "1px solid lightgray",
+                                    borderRadius: "5px",
+                                  }}
+                                  onClick={() =>
+                                    handlePreview(
+                                      `data:image/png;base64,${transaction.payment_proof}`
+                                    )
+                                  }
+                                />
+                              </Tooltip>
                             </div>
                           </Typography>
                         </Box>
@@ -385,15 +427,19 @@ const OrderDetailPage = () => {
         <Box sx={{ marginTop: "20px" }}>
           <Card>
             <CardContent>
-              <Typography sx={{ fontSize: '16px' }} fontWeight="bold" >Billing Address</Typography>
-              <Typography sx={{ fontSize: '14px' }}>
+              <Typography sx={{ fontSize: "16px" }} fontWeight="bold">
+                Billing Address
+              </Typography>
+              <Typography sx={{ fontSize: "14px" }}>
                 {billing_address.street}, {billing_address.city},{" "}
                 {billing_address.state}, {billing_address.zipCode},{" "}
                 {billing_address.country}
               </Typography>
               <Divider sx={{ my: 1 }} />
-              <Typography sx={{ fontSize: '16px' }} fontWeight="bold">Shipping Address</Typography>
-              <Typography sx={{ fontSize: '14px' }}>
+              <Typography sx={{ fontSize: "16px" }} fontWeight="bold">
+                Shipping Address
+              </Typography>
+              <Typography sx={{ fontSize: "14px" }}>
                 {shipping_address.shipping_address.street},{" "}
                 {shipping_address.shipping_address.city},{" "}
                 {shipping_address.shipping_address.state},{" "}
@@ -471,6 +517,58 @@ const OrderDetailPage = () => {
           </Typography>
         </Box>
       </div>
+
+
+      <Dialog
+        open={isReorderDialogOpen}
+        onClose={handleReorderCancel}
+      >
+        <DialogTitle>Confirm Reorder</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            Are you sure you want to reorder this order? A new order will be placed.
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleReorderCancel} color="secondary">
+            Cancel
+          </Button>
+          <Button onClick={handleReorder} color="primary">
+            Confirm
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Reorder Error Modal */}
+      <Modal
+        open={isReorderError}
+        onClose={() => setIsReorderError(false)}
+        aria-labelledby="reorder-error-title"
+      >
+        <Box
+          sx={{
+            p: 3,
+            backgroundColor: "white",
+            borderRadius: 2,
+            textAlign: "center",
+            m: "auto",
+            mt: "15vh",
+            width: 300,
+          }}
+        >
+          <Typography id="reorder-error-title" variant="h6" color="error">
+            Failed to place order!
+          </Typography>
+          <Button
+            variant="contained"
+            color="primary"
+            sx={{ mt: 2 }}
+            onClick={() => setIsReorderError(false)}
+          >
+            Close
+          </Button>
+        </Box>
+      </Modal>
     </div>
   );
 };

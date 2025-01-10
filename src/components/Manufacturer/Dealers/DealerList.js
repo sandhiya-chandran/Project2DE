@@ -151,7 +151,7 @@ function DealerList() {
   };
 
   return (
-    <div style={{ margin: '12px',  marginBottom:'25px' }}>
+    <div style={{   marginBottom:'25px' }}>
       <Box>
         <Box
           sx={{
@@ -159,8 +159,13 @@ function DealerList() {
             justifyContent: "flex-end",
             alignItems: "center",
             gap: 2,
-            padding: "10px 10px 0px 10px",
+            padding: "10px 0px",
             marginBottom: "20px",
+            backgroundColor:'white',
+            position:'sticky',
+            top:'55px',
+            zIndex:9,
+            px:1
           }}
         >
           <Box>
@@ -217,8 +222,15 @@ function DealerList() {
           />
         </Box>
 
+        <Box sx={{ display: "flex", justifyContent: "flex-end" ,   px:1 }}>
+          <Button sx={{ p: 0, mb: 1, textTransform: "none" }}>
+            Total Buyers : {filteredDealers.length}{" "}
+          </Button>
+        </Box>
+
+
         {/* Dealer Listing table with horizontal scroll */}
-        <Box sx={{ margin: "5px" }}>
+        <Box sx={{ margin: "10px" }}>
           <TableContainer component={Paper} sx={{ marginTop: 2 }}>
             <Table>
               <TableHead>

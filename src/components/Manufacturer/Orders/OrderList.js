@@ -1,6 +1,6 @@
 // src\components\Manufacturer\Orders\OrderList.js
-
 import React, { useMemo, useEffect, useState } from "react";
+import { useLocation } from 'react-router-dom';
 import Tooltip from "@mui/material/Tooltip";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
@@ -68,6 +68,7 @@ const StyledMenu = styled(Menu)(({ theme }) => ({
 }));
 
 const OrderList = () => {
+  const location = useLocation();
   const user = JSON.parse(localStorage.getItem("user"));
   const navigate = useNavigate();
   const [orders, setOrders] = useState([]);
@@ -80,6 +81,7 @@ const OrderList = () => {
   const [delivery_status, setDeliveryStatus] = useState("all");
   const [fulfilled_status, setFulfilledStatus] = useState("all");
   const [payment_status, setPaymentStatus] = useState("all");
+  const [is_reorder, setis_reorder] = useState("all");
   const [exportAnchorEl, setExportAnchorEl] = useState(null);
   const [dealers, setDealers] = useState([]);
   const [dealerAnchorEl, setDealerAnchorEl] = useState(null);
@@ -94,6 +96,19 @@ const OrderList = () => {
     navigate(`/manufacturer/order-details/${orderId}`); // Navigate to the OrderDetail page with orderId
   };
 
+  useEffect(() => {
+        // Get the query parameters from the URL
+        const searchParams = new URLSearchParams(location.search);
+        const filter = searchParams.get('filter');
+    
+        // Set the filter state based on the query parameter in the URL
+        if (filter === 'Pending') {
+          setPaymentStatus('Pending');
+        } else if (filter === 'yes') {
+          setis_reorder('Yes');
+        }
+      }, [location.search]); // Trigger effect whenever the URL changes
+    
 
   const filteredOrders = orders.filter((order) => {
     // Ensure searchTerm is normalized
@@ -182,6 +197,7 @@ const OrderList = () => {
           fulfilled_status, // Use state directly
           payment_status,   // Use state directly
           search_by_date: formattedDate,
+          is_reorder,
         }
       );
       setOrders(response.data.data);
@@ -194,9 +210,6 @@ const OrderList = () => {
       setLoading(false);
     }
   };
-  
-
-  
 
   const handleStatusFilter = (statusType, status) => {
     // Clear all filters except the one that was selected
@@ -204,14 +217,22 @@ const OrderList = () => {
       setDeliveryStatus(status);
       setFulfilledStatus("all");
       setPaymentStatus("all");
+      setis_reorder("all");
     } else if (statusType === "fulfilled_status") {
       setDeliveryStatus("all");
       setFulfilledStatus(status);
       setPaymentStatus("all");
+      setis_reorder("all");
     } else if (statusType === "payment_status") {
       setDeliveryStatus("all");
       setFulfilledStatus("all");
       setPaymentStatus(status);
+      setis_reorder("all");
+    } else if (statusType === "is_reorder") {
+      setDeliveryStatus("all");
+      setFulfilledStatus("all");
+      setPaymentStatus("all");
+      setis_reorder(status);
     }
   
     setAnchorEl(null); // Close the menu
@@ -228,6 +249,7 @@ const OrderList = () => {
     delivery_status,
     fulfilled_status,
     payment_status,
+    is_reorder,
     selectedDealerIds,
     selectedDate
   ]);
@@ -319,7 +341,7 @@ const OrderList = () => {
     }
   };
   return (
-    <Box sx={{ display: "flex" , margin:'12px',  marginBottom:'25px'}}>
+    <Box sx={{ display: "flex" , marginBottom:'25px' , p:0}}>
       <Box sx={{ p: 1, flexGrow: 1 }}>
         <Box
           sx={{
@@ -328,6 +350,11 @@ const OrderList = () => {
             alignItems: "center",
             pb: 2,
             gap: 2,
+            backgroundColor:'white',
+            position:'sticky',
+            top:'56px',
+            padding:'10px 0px',
+            zIndex:9,
           }}
         >
           <Button
@@ -437,6 +464,7 @@ const OrderList = () => {
             </IconButton>
           </Tooltip>
         </Box>
+       
         <Box sx={{ display: "flex", justifyContent: "flex-end" }}>
           <Button sx={{ p: 0, mb: 1, textTransform: "none" }}>
             Total Orders : {orders.length}{" "}
@@ -509,6 +537,13 @@ const OrderList = () => {
                     <MoreVertIcon sx={{ fontSize: "14px" }} />
                   </IconButton>
                 </TableCell>
+                <TableCell align="center">Reorder
+              <IconButton
+                    onClick={(e) => handleOpenMenu(e, "is_reorder")}
+                  >
+                    <MoreVertIcon sx={{ fontSize: "14px" }} />
+                  </IconButton>
+              </TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
@@ -583,6 +618,7 @@ const OrderList = () => {
                       }}>
                         {order.delivery_status}
                       </TableCell>
+                       <TableCell align="center">{order.is_reorder ? "yes" : "no"}</TableCell>
                     </TableRow>
                   ))
               ) : (
@@ -703,6 +739,20 @@ const OrderList = () => {
             </MenuItem>
           </>
         )}
+
+         {currentColumn === "is_reorder" && (
+                  <>
+                    <MenuItem onClick={() => handleStatusFilter("is_reorder", "all")}>
+                      All
+                    </MenuItem>
+                    <MenuItem onClick={() => handleStatusFilter("is_reorder", "Yes")}>
+                      Yes
+                    </MenuItem>
+                    <MenuItem onClick={() => handleStatusFilter("is_reorder", "No")}>
+                      No
+                    </MenuItem>
+                  </>
+                )}
       </Menu>
 
       {/* Dealer Selection Dropdown */}

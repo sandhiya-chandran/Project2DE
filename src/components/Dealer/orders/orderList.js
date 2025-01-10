@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { useLocation } from 'react-router-dom';
 import { Box, Button, Table, TableBody,MenuItem, Menu,TableCell, TableContainer, TableHead, TableRow, Paper, TextField ,IconButton, InputAdornment,} from "@mui/material";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
@@ -15,8 +16,24 @@ const OrderList = () => {
   const [delivery_status, setDeliveryStatus] = useState("all");
   const [fulfilled_status, setFulfilledStatus] = useState("all");
   const [payment_status, setPaymentStatus] = useState("all");
+  const [is_reorder, setis_reorder] = useState("all");
   const [page, setPage] = useState(0);
   const navigate = useNavigate();
+  const location = useLocation();
+
+  useEffect(() => {
+      // Get the query parameters from the URL
+      const searchParams = new URLSearchParams(location.search);
+      const filter = searchParams.get('filter');
+  
+      // Set the filter state based on the query parameter in the URL
+      if (filter === 'Pending') {
+        setPaymentStatus('Pending');
+      }else if (filter === 'yes') {
+        setis_reorder('Yes');
+      }
+    }, [location.search]); // Trigger effect whenever the URL changes
+  
 
   // Function to fetch the order list
   const fetchOrderList = async (key, direction) => {
@@ -33,7 +50,8 @@ const OrderList = () => {
           // dealer_list: selectedDealerIds || [], // Default to an empty array
           delivery_status,  // Use state directly
           fulfilled_status, // Use state directly
-          payment_status,   // Use state directly
+          payment_status,
+          is_reorder,   // Use state directly
       
         }
       );
@@ -56,10 +74,11 @@ const OrderList = () => {
     user?.id,
     sortConfig,
     page,
-  
+
     delivery_status,
     fulfilled_status,
     payment_status,
+    is_reorder,
   
   ]);
 
@@ -117,23 +136,36 @@ const OrderList = () => {
       setDeliveryStatus(status);
       setFulfilledStatus("all");
       setPaymentStatus("all");
+      setis_reorder("all");
     } else if (statusType === "fulfilled_status") {
       setDeliveryStatus("all");
       setFulfilledStatus(status);
       setPaymentStatus("all");
+      setis_reorder("all");
     } else if (statusType === "payment_status") {
       setDeliveryStatus("all");
       setFulfilledStatus("all");
       setPaymentStatus(status);
+      setis_reorder("all");
+    } else if (statusType === "is_reorder") {
+      setDeliveryStatus("all");
+      setFulfilledStatus("all");
+      setPaymentStatus("all");
+      setis_reorder(status);
     }
   
     setAnchorEl(null); // Close the menu
   };
 
   return (
-    <Box sx={{ display: "flex", flexDirection: "column", gap: 2  , padding:1 , marginTop:1 , }}>
+    <Box sx={{ display: "flex", flexDirection: "column"}}>
      
-      <Box  sx={{ display: "flex", justifyContent: "flex-end", alignItems:'center' , gap:2 }}> 
+      <Box  sx={{ display: "flex", justifyContent: "flex-end", alignItems:'center' , gap:2 , padding:'15px 10px',
+         backgroundColor:'white',
+         position:'sticky',
+         top:'55px',
+         zIndex:9,
+      }}> 
          <TextField
           placeholder="Search Orders"
           sx={{
@@ -178,7 +210,8 @@ const OrderList = () => {
         Total Orders: {filteredOrders.length}
       </Button>
       </Box>
-      <TableContainer component={Paper}>
+     <Box sx={{margin:'10px'}}>
+     <TableContainer component={Paper}>
         <Table>
           <TableHead>
             <TableRow>
@@ -223,6 +256,13 @@ const OrderList = () => {
                     <MoreVertIcon sx={{ fontSize: "14px" }} />
                   </IconButton>
               </TableCell>
+              <TableCell align="center">Reorder
+              <IconButton
+                    onClick={(e) => handleOpenMenu(e, "is_reorder")}
+                  >
+                    <MoreVertIcon sx={{ fontSize: "14px" }} />
+                  </IconButton>
+              </TableCell>
               <TableCell>Make Payment</TableCell>
             </TableRow>
           </TableHead>
@@ -233,9 +273,9 @@ const OrderList = () => {
                   <TableCell align="center" onClick={() => handleOrderClick(order.id)}>
                     {order.order_id}
                   </TableCell>
-                  <TableCell align="center">{order.total_items}</TableCell>
-                  <TableCell align="center">{order.currency + order.amount}</TableCell>
-                  <TableCell align="center">
+                  <TableCell align="center" onClick={() => handleOrderClick(order.id)}>{order.total_items}</TableCell>
+                  <TableCell align="center" onClick={() => handleOrderClick(order.id)}>{order.currency + order.amount}</TableCell>
+                  <TableCell align="center" onClick={() => handleOrderClick(order.id)}>
                     {new Date(order.order_date).toLocaleDateString()}
                   </TableCell>
                   <TableCell align="center"
@@ -275,6 +315,7 @@ const OrderList = () => {
                         : "black", // Default color
                   }}
 >{order.delivery_status}</TableCell>
+                  <TableCell align="center">{order.is_reorder ? "yes" : "no"}</TableCell>
                   <TableCell>
                     <Button
                       variant="contained"
@@ -300,7 +341,7 @@ const OrderList = () => {
               ))
             ) : (
               <TableRow>
-                <TableCell colSpan={8} align="center">
+                <TableCell colSpan={9} align="center">
                   No Orders Available
                 </TableCell>
               </TableRow>
@@ -308,6 +349,7 @@ const OrderList = () => {
           </TableBody>
         </Table>
       </TableContainer>
+     </Box>
 
       <Menu
         anchorEl={anchorEl}
@@ -447,6 +489,20 @@ const OrderList = () => {
               onClick={() => handleStatusFilter("payment_status", "Failed")}
             >
               Failed
+            </MenuItem>
+          </>
+        )}
+
+        {currentColumn === "is_reorder" && (
+          <>
+            <MenuItem onClick={() => handleStatusFilter("is_reorder", "all")}>
+              All
+            </MenuItem>
+            <MenuItem onClick={() => handleStatusFilter("is_reorder", "Yes")}>
+              Yes
+            </MenuItem>
+            <MenuItem onClick={() => handleStatusFilter("is_reorder", "No")}>
+              No
             </MenuItem>
           </>
         )}

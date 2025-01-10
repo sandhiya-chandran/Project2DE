@@ -25,14 +25,16 @@ import {
   Legend,
 } from "chart.js";
 import { Bar } from "react-chartjs-2";
+import { useNavigate } from "react-router-dom";
 
 // Register Chart.js components
 ChartJS.register(CategoryScale, LinearScale, BarElement, Tooltip, Legend);
 
 const DashboardHome = () => {
+  const navigate = useNavigate();
   const user = JSON.parse(localStorage.getItem("user"));
   const [dashboardData, setDashboardData] = useState(null);
-  const [loading, setLoading] = useState(true); // Added loading state
+  const [loading, setLoading] = useState(true); 
 
   // Fetch Dashboard Data from API
   const fetchDashboardData = async () => {
@@ -83,16 +85,19 @@ const DashboardHome = () => {
       title: "Total Orders",
       value: dashboardData.total_order_count || '0',
       color: "#2196f3",
+      onClick: () => handleTotalOrdersClick(),
     },
     {
       title: "Pending Payments",
       value: dashboardData.pending_order_count || '0' ,
       color: "#f44336",
+      onClick: () => handlePendingClick(),
     },
     {
       title: "Re-Orders",
       value: dashboardData.re_order_count || '0',
       color: "#c522ff",
+      onClick: () => handleReorderClick(),
     },
   ];
 
@@ -101,9 +106,9 @@ const DashboardHome = () => {
     labels: dashboardData.top_selling_brands.map((brand) => brand.brand_name),
     datasets: [
       {
-        label: "Total Sales ($)",
+        label: "No of Product sold",
         data: dashboardData.top_selling_brands.map(
-          (brand) => brand.total_sales
+          (brand) => brand.units_sold
         ),
         backgroundColor: "#2196f3",
       },
@@ -117,14 +122,36 @@ const DashboardHome = () => {
     ),
     datasets: [
       {
-        label: "Total Sales ($)",
+        label: "No of Product sold",
         data: dashboardData.top_selling_categorys.map(
-          (category) => category.total_sales
+          (category) => category.units_sold
         ),
         backgroundColor: "#4caf50",
       },
     ],
   };
+
+  const handlePendingClick = () => {
+    navigate(`/dealer/orders?filter=Pending`);
+  };
+
+  const handleReorderClick = () => {
+    navigate(`/dealer/orders?filter=yes`);
+  };
+
+  const handleTotalOrdersClick = () => {
+    navigate(`/dealer/orders`);
+  };
+
+  const handleOrderClick = (orderId) => {
+    console.log("OrderDetail ID:", orderId);
+    navigate("/dealer/OrderDetail", { state: { orderId } });
+  };
+
+  const handleProductClick = (productId) => {
+    navigate(`/dealer/products/${productId}`);
+  };
+
 
   return (
     <Box p={2}>
@@ -138,7 +165,10 @@ const DashboardHome = () => {
                 padding: "16px",
                 textAlign: "center",
                 color: item.color,
+                cursor:'pointer'
+                
               }}
+              onClick={item.onClick}
             >
               <Typography variant="h6">{item.title}</Typography>
               <Typography variant="h5">{item.value}</Typography>
@@ -170,77 +200,77 @@ const DashboardHome = () => {
         </Grid>
       </Grid>
 
-      {/* Top Selling Products Table */}
-      <Grid container spacing={2}>
-        <Grid item xs={12} md={8}>
-          <Typography variant="h6" mt={3} mb={2}>
-            Top Selling Products
-          </Typography>
-          <TableContainer component={Paper}>
-            <Table>
-              <TableHead>
-                <TableRow>
-                  <TableCell>Product</TableCell>
-                  <TableCell>SKU No</TableCell>
-                  <TableCell>Brand</TableCell>
-                  <TableCell>Category</TableCell>
-                  <TableCell>Lastest Purchase</TableCell>
-                  <TableCell>Units Sold</TableCell>
-                  <TableCell>Total Sales ($)</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
+       {/* Top Selling Products Table  */}
+        <Grid container spacing={2}>
+          <Grid item xs={12} md={8}>
+            <Typography variant="h6" mt={3} mb={2}>
+          Top Selling Products
+            </Typography>
+            <TableContainer component={Paper}>
+          <Table>
+            <TableHead>
+              <TableRow>
+            <TableCell>Product</TableCell>
+            <TableCell>SKU No</TableCell>
+            <TableCell>Brand</TableCell>
+            <TableCell>Category</TableCell>
+            <TableCell>Lastest Purchase</TableCell>
+            <TableCell>Units Sold</TableCell>
+            <TableCell>Total Sales ($)</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
 
-              {dashboardData.top_selling_products.length > 0 ? (
-  dashboardData.top_selling_products.map((product) => (
-    <TableRow key={product.id}>
-    <TableCell>
-      <img
-        src={product.primary_image}
-        alt={product.sku_number}
-        width="30"
-      />
-    </TableCell>
-    <TableCell>{product.sku_number}</TableCell>
-    <TableCell>
-      <img
-        src={product.brand_logo}
-        alt={product.brand_name}
-        width="15"
-      />
-    </TableCell>
-    <TableCell>{product.category_name}</TableCell>
-    <TableCell>
-      {new Date(product.last_updated).toLocaleDateString()}
-    </TableCell>
-    <TableCell>{product.units_sold}</TableCell>
-    <TableCell>{product.total_sales.toFixed(2)}</TableCell>
-  </TableRow>
-  ))
-) : (
-  <TableRow>
-    <TableCell colSpan={7} style={{ textAlign: 'center' }}>
-      No products found
-    </TableCell>
-  </TableRow>
-)}
+      {dashboardData.top_selling_products && dashboardData.top_selling_products.length > 0 ? (
+        dashboardData.top_selling_products.map((product) => (
+          <TableRow key={product.id} onClick={() => handleProductClick(product.product_id)} style={{ cursor: 'pointer' }}>
+          <TableCell >
+        <img
+          src={product.primary_image}
+          alt={product.sku_number}
+          width="30"
+        />
+          </TableCell>
+          <TableCell>{product.sku_number}</TableCell>
+          <TableCell>
+        <img
+          src={product.brand_logo}
+          alt={product.brand_name}
+          width="15"
+        />
+          </TableCell>
+          <TableCell>{product.category_name}</TableCell>
+          <TableCell>
+        {new Date(product.last_updated).toLocaleDateString()}
+          </TableCell>
+          <TableCell>{product.units_sold}</TableCell>
+          <TableCell>{product.total_sales.toFixed(2)}</TableCell>
+        </TableRow>
+        ))
+      ) : (
+        <TableRow>
+          <TableCell colSpan={7} style={{ textAlign: 'center' }}>
+        No products found
+          </TableCell>
+        </TableRow>
+      )}
 
-              </TableBody>
-            </Table>
-          </TableContainer>
-        </Grid>
-        <Grid item xs={12} md={4}>
-          <Typography variant="h6" mt={3} mb={2}>
-            Your Recent Orders
-          </Typography>
-          <Grid container spacing={2}>
-            {" "}
-            {/* Adjusted spacing for consistency */}
+            </TableBody>
+          </Table>
+            </TableContainer>
+          </Grid>
+          <Grid item xs={12} md={4}>
+            <Typography variant="h6" mt={3} mb={2}>
+          Your Recent Orders
+            </Typography>
+            <Grid container spacing={2}>
+          {" "}
+          {/* Adjusted spacing for consistency */}
             {dashboardData.recent_orders.length === 0 ? (
               <Grid item xs={12}>
                 {" "}
                 {/* Full-width card when no orders */}
-                <Card sx={{ padding: "8px" }}>
+                <Card sx={{ padding: "8px" }} >
                   <CardContent
                     sx={{
                       padding: 0,
@@ -262,7 +292,7 @@ const DashboardHome = () => {
                 <Grid item xs={12} sm={6} md={6} key={order.id}>
                   {" "}
                   {/* 2 columns on small screens, 3 on medium */}
-                  <Card sx={{ padding: "8px" }}>
+                  <Card sx={{ padding: "8px" , cursor:'pointer'}} onClick={() => handleOrderClick(order.id)}>
                     <CardContent
                       sx={{
                         padding: 0,
@@ -298,13 +328,7 @@ const DashboardHome = () => {
                         Order Date:{" "}
                         {new Date(order.order_date).toLocaleDateString()}
                       </Typography>
-                      <Typography
-                        variant="body2"
-                        color="#1976d2"
-                        sx={{ fontSize: "11px" , marginTop:'5px' , cursor: 'pointer' , fontWeight:500}}
-                      >
-                       Reorder
-                      </Typography>
+                   
                     </CardContent>
                   </Card>
                 </Grid>

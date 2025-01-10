@@ -91,9 +91,15 @@ function Settingspage() {
   };
 
   return (
-    <div style={{ padding: '20px' }}>
+    <div>
       {/* Tabs at the top */}
-      <Paper elevation={3} sx={{ marginBottom: '20px' }}>
+      <Paper elevation={3} sx={{ marginBottom: '20px' , boxShadow:'none',
+         backgroundColor:'white',
+         position:'sticky',
+         top:'56px',
+         padding:'10px 0px',
+         zIndex:9,
+       }}>
         <Tabs
           value={selectedTab}
           onChange={handleTabChange}
@@ -108,8 +114,9 @@ function Settingspage() {
         </Tabs>
       </Paper>
 
-      {/* Tab Content */}
-      <Grid container spacing={2}>
+     <Box sx={{margin:'10px'}}>
+       {/* Tab Content */}
+       <Grid container spacing={2}>
         <Grid item xs={12}>
           {/* General Info Tab */}
           <Box hidden={selectedTab !== 0}>
@@ -298,6 +305,7 @@ function Settingspage() {
           </Box>
         </Grid>
       </Grid>
+     </Box>
 
       {/* Popup Component */}
       {isPopupOpen && selectedTemplate && (

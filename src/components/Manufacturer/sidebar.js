@@ -41,16 +41,17 @@ const Sidebar = () => {
             <ListItemText primary="Dashboard" />
           </ListItemButton>
         </ListItem>
-        <ListItem disablePadding>
-          <ListItemButton component={Link} to="/manufacturer/orders" sx={getActiveStyle('/manufacturer/orders')}>
-            <Receipt sx={{ mr: 1 }} /> {/* Orders Icon */}
-            <ListItemText primary="Orders" />
-          </ListItemButton>
-        </ListItem>
+      
         <ListItem disablePadding>
           <ListItemButton component={Link} to="/manufacturer/products" sx={getActiveStyle('/manufacturer/products')}>
             <ShoppingCart sx={{ mr: 1 }} /> {/* Products Icon */}
             <ListItemText primary="Products" />
+          </ListItemButton>
+        </ListItem>
+        <ListItem disablePadding>
+          <ListItemButton component={Link} to="/manufacturer/orders" sx={getActiveStyle('/manufacturer/orders')}>
+            <Receipt sx={{ mr: 1 }} /> {/* Orders Icon */}
+            <ListItemText primary="Orders" />
           </ListItemButton>
         </ListItem>
         <ListItem disablePadding>

@@ -168,15 +168,6 @@ const OrderDetail = () => {
           Track Order
         </Button>
         <Button disabled variant="outlined" color="primary" sx={{marginRight:2, marginBottom:2}}>
-          Reorder
-        </Button>
-        <Button disabled variant="outlined" color="primary" sx={{marginRight:2, marginBottom:2}}>
-          Return
-        </Button>
-        <Button disabled variant="outlined" color="primary" sx={{marginRight:2, marginBottom:2}}>
-          Payment verification
-        </Button>
-        <Button disabled variant="outlined" color="primary" sx={{marginRight:2, marginBottom:2}}>
           Reject order
         </Button>
         <Button disabled variant="outlined" color="primary" sx={{marginRight:2, marginBottom:2}}>
