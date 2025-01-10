@@ -22,6 +22,7 @@ import {
   Stack,
   Pagination,
   MenuItem,
+  Grid,
 } from "@mui/material";
 import ClearIcon from "@mui/icons-material/Clear";
 import CompareArrowsOutlinedIcon from "@mui/icons-material/CompareArrowsOutlined";
@@ -36,8 +37,9 @@ import { useNavigate } from "react-router-dom";
 import FavoriteBorderIcon from "@mui/icons-material/FavoriteBorder";
 import FavoriteIcon from "@mui/icons-material/Favorite";
 import Sidebar from "../sidebar";
+import ProductBrand from "./ProductBrands";
 
-const ProductList = ({ fetchCartCount, selectedBrandIds }) => {
+const ProductList = ({ fetchCartCount }) => {
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -67,12 +69,18 @@ const ProductList = ({ fetchCartCount, selectedBrandIds }) => {
 
   const [wishlistProducts, setWishlistProducts] = useState([]);
   const [isInWishlist, setIsInWishlist] = useState(false);
+  const [selectedBrandIds, setSelectedBrandIds] = useState([]);
 
   const userData = localStorage.getItem("user");
   const [debounceTimer, setDebounceTimer] = useState(null);
   const debounceTimerRef = useRef(null);
 
-  console.log("Received Selected Brand IDs in ProductList:", selectedBrandIds);
+  const handleBrandChange = ({ updatedBrands }) => {
+    console.log("Updated selected brands PL:", updatedBrands);
+    // Update the selectedBrandIds state with the updated brand list (array)
+    setSelectedBrandIds(updatedBrands);
+  };
+
   // Fetch Products
   useEffect(() => {
     if (
@@ -92,11 +100,27 @@ const ProductList = ({ fetchCartCount, selectedBrandIds }) => {
             manufactureUnitId = data.manufacture_unit_id;
           }
 
-          const productResponse = await axios.get(
-            `${process.env.REACT_APP_IP}obtainProductsListForDealer/?manufacture_unit_id=${manufactureUnitId}&product_category_id=${selectedCategoryId ? selectedCategoryId : ""}&industry_id=${industry?.id || ""}&brand_id_list=${selectedBrandIds || ""}&skip=${(page - 1) * productsPerPage}&limit=${productsPerPage}&sort_by=price&sort_by_value=${sortByValue}&filters=all`
+          // Create the request payload
+          const requestData = {
+            manufacture_unit_id: manufactureUnitId,
+            product_category_id: selectedCategoryId || "",
+            industry_id: industry?.id || "",
+            skip: (page - 1) * productsPerPage,
+            limit: productsPerPage,
+            sort_by: "price",
+            sort_by_value: sortByValue,
+            filters: "all",
+            brand_id_list: selectedBrandIds,
+          };
+
+          const productResponse = await axios.post(
+            `${process.env.REACT_APP_IP}obtainProductsListForDealer/`, // POST request
+            requestData
           );
+
           setProducts(productResponse.data.data || []);
           console.log(productResponse.data);
+          console.log("Selected Brand Ids:", selectedBrandIds);
         } catch (err) {
           setError("Failed to load items");
         } finally {
@@ -127,16 +151,28 @@ const ProductList = ({ fetchCartCount, selectedBrandIds }) => {
             manufactureUnitId = data.manufacture_unit_id;
           }
 
-          const productCountForDealerResponse = await axios.get(
-            `${process.env.REACT_APP_IP}productCountForDealer/?manufacture_unit_id=${manufactureUnitId}&product_category_id=${selectedCategoryId ? selectedCategoryId : ""}&industry_id=${industry?.id || ""}&filters=all`
+          // Create the request payload
+          const requestData = {
+            manufacture_unit_id: manufactureUnitId,
+            product_category_id: selectedCategoryId || "",
+            industry_id: industry?.id || "",
+            filters: "all",
+            brand_id_list: selectedBrandIds || [], // Add selectedBrandIds to the request body
+          };
+
+          const productCountForDealerResponse = await axios.post(
+            `${process.env.REACT_APP_IP}productCountForDealer/`, // POST request
+            requestData
           );
-          // setProductsCount(productCountForDealerResponse.data.data || []);
+
+          // Set product count and calculate total pages
           const productCount = productCountForDealerResponse.data.data || 0;
           setProductsCount(productCount);
           const calculatedTotalPages = Math.ceil(
             productCount / productsPerPage
           );
           setTotalPages(calculatedTotalPages);
+
           console.log(productCountForDealerResponse.data);
         } catch (err) {
           setError("Failed to load items");
@@ -147,7 +183,7 @@ const ProductList = ({ fetchCartCount, selectedBrandIds }) => {
 
       productCountForDealer();
     }
-  }, [selectedCategoryId, industry]);
+  }, [selectedCategoryId, industry, selectedBrandIds]); // Added selectedBrandIds as dependency
 
   // Fetch industries on component mount
   useEffect(() => {
@@ -430,39 +466,44 @@ const ProductList = ({ fetchCartCount, selectedBrandIds }) => {
   const addToWishlist = async (productId) => {
     const user = JSON.parse(userData);
     const userId = user.id;
-  
+
     try {
-      const response = await axios.post(`${process.env.REACT_APP_IP}createWishList/`, { user_id: userId, product_id: productId });
-      
+      const response = await axios.post(
+        `${process.env.REACT_APP_IP}createWishList/`,
+        { user_id: userId, product_id: productId }
+      );
+
       const updatedProducts = products.map((product) =>
         product.id === productId
           ? {
-              ...product, 
+              ...product,
               is_wishlist: true, // Set is_wishlist to true
-              wishlist_id: response.data.data.wishlist_id || null // Update with the wishlist ID from the response
+              wishlist_id: response.data.data.wishlist_id || null, // Update with the wishlist ID from the response
             }
           : product
       );
-  
+
       setProducts(updatedProducts); // Update the state with the updated product
-  
+
       console.log("Wishlist ID:", response.data.data.wishlist_id);
       console.log("Wishlist Boolean:", response.data.data.is_created);
       console.log("Wishlist added:", response.data);
       console.log("Wishlist products:", updatedProducts);
-  
     } catch (err) {
       console.error("Error adding to wishlist:", err);
       alert("Failed to add item to wishlist. Please try again.");
     }
   };
-  
-  
+
   const removeFromWishlist = async (wishlistId, productId) => {
     try {
-      await axios.get(`${process.env.REACT_APP_IP}deleteWishlist/`, { params: { wish_list_id: wishlistId } });
+      await axios.get(`${process.env.REACT_APP_IP}deleteWishlist/`, {
+        params: { wish_list_id: wishlistId },
+      });
       const updatedProducts = products.map((product) =>
-        product.id === productId ? { ...product, is_wishlist: false, wishlist_id: null } : product
+        product.id === productId
+          ? { ...product, is_wishlist: false, wishlist_id: null }
+          : product
       );
       setProducts(updatedProducts); // Update product state without wishlist ID
     } catch (err) {
@@ -470,9 +511,6 @@ const ProductList = ({ fetchCartCount, selectedBrandIds }) => {
       alert("Failed to remove item from wishlist. Please try again.");
     }
   };
-  
-
-
 
   if (loading)
     return (
@@ -494,527 +532,555 @@ const ProductList = ({ fetchCartCount, selectedBrandIds }) => {
 
   return (
     <div>
-      <Box
-        sx={{
-          backgroundColor: "white",
-          position: "sticky",
-          top: "56px",
-          padding: "10px 0px",
-          zIndex: 9,
-        }}
-      >
-        <Box sx={{ maxWidth: "80vw", margin: "0 auto" }}>
-          <Box
-            sx={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "flex-end",
-              gap: "10px",
-              mt: 2,
-              mb: 2,
-            }}
-          >
-            <Tabs
-              value={value}
-              onChange={handleChange}
-              variant="scrollable"
-              scrollButtons
-              TabIndicatorProps={{ style: { display: "none" } }}
+      <Grid container spacing={1}>
+        <Grid item xs={12} md={1.5} >
+        <Box
+      sx={{
+        position: "sticky",
+        top: "56px", // Adjust this value based on the height of your header or top bar
+        height: "calc(100vh - 56px)", // Ensure it occupies the full height below the header
+        overflowY: "auto", // Allow scrolling inside if needed
+        boxShadow: "0px 0px 2px rgba(0, 0, 0, 0.1)", // Light shadow
+      }}
+    >
+      <ProductBrand
+        industryId={industry?.id}
+        onBrandChange={handleBrandChange}
+      />
+    </Box>
+        </Grid>
+        <Grid item xs={12} md={10.5}>
+          <Box>
+            <Box
               sx={{
-                [`& .${tabsClasses.scrollButtons}`]: {
-                  "&.Mui-disabled": { opacity: 0.3 },
-                  width: "20px",
-                },
-                display: "flex",
-                alignItems: "center",
+                backgroundColor: "white",
+                position: "sticky",
+                top: "56px",
+                padding: "10px 0px",
+                zIndex: 9,
               }}
             >
-              {categories.length > 0 ? (
-                categories.map((tab, index) => (
-                  <Tab
-                    key={tab.id}
-                    disableRipple
-                    label={tab.name}
+              <Box sx={{ maxWidth: "85vw"}}>
+                <Box
+                  sx={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "flex-end",
+                    gap: "10px",
+                    mt: 2,
+                    mb: 2,
+                  }}
+                >
+                  <Tabs
+                    value={value}
+                    onChange={handleChange}
+                    variant="scrollable"
+                    scrollButtons
+                    TabIndicatorProps={{ style: { display: "none" } }}
                     sx={{
-                      fontSize: "12px",
-                      textTransform: "capitalize",
-                      borderRadius: "50px",
-                      padding: "0px 15px",
-                      border: "1px solid",
-                      borderColor:
-                        value === index ? "primary.main" : "grey.400",
-                      color: value === index ? "white" : "text.primary",
-                      transition: "all 0.3s",
-                      margin: "0px 5px",
-                      minHeight: "30px",
+                      [`& .${tabsClasses.scrollButtons}`]: {
+                        "&.Mui-disabled": { opacity: 0.3 },
+                        width: "20px",
+                      },
                       display: "flex",
                       alignItems: "center",
-                      justifyContent: "center",
                     }}
-                  />
-                ))
-              ) : (
-                <Typography variant="body2" sx={{ padding: "10px" }}>
-                  No category and products available under this Industry
-                </Typography>
-              )}
-            </Tabs>
-
-            <Box>
-              <FormControl fullWidth sx={{ minWidth: "200px" }}>
-                <Select
-                  sx={{ fontSize: "14px" }}
-                  id="industry-select"
-                  value={industry ? industry.id : ""}
-                  onChange={handleIndustryChange}
-                  displayEmpty
-                  placeholder="Select Industry" // This will act as a placeholder
-                >
-                  <MenuItem disabled sx={{ fontSize: "14px" }} value="">
-                    Select Industry
-                  </MenuItem>
-                  {industryList.length > 0 ? (
-                    industryList.map((item) => (
-                      <MenuItem
-                        sx={{ fontSize: "14px" }}
-                        key={item.id}
-                        value={item.id}
-                      >
-                        {item.name}
-                      </MenuItem>
-                    ))
-                  ) : (
-                    <MenuItem disabled>
-                      <em>No industry available</em>
-                    </MenuItem>
-                  )}
-                </Select>
-              </FormControl>
-            </Box>
-          </Box>
-        </Box>
-
-        <Box
-          display="flex"
-          flexWrap="wrap"
-          justifyContent="space-between"
-          marginBottom={"25px"}
-          gap={1}
-          sx={{ margin: "0px 20px" }}
-        >
-          <Box
-            display="flex"
-            flexWrap="wrap"
-            justifyContent="flex-start"
-            gap={1}
-          >
-            <Button
-              onClick={() => handleSortChange(1)}
-              sx={{
-                fontSize: "11px",
-                fontWeight: 500,
-                padding: "3px 10px",
-                textTransform: "none",
-                backgroundColor:
-                  sortByValue === 1 ? "primary.main" : "#d3d3d38c",
-                borderRadius: "25px",
-                color: sortByValue === 1 ? "white" : "black",
-              }}
-            >
-              Price Low to High
-            </Button>
-            <Button
-              onClick={() => handleSortChange(-1)}
-              sx={{
-                fontSize: "11px",
-                fontWeight: 500,
-                padding: "3px 10px",
-                textTransform: "none",
-                backgroundColor:
-                  sortByValue === -1 ? "primary.main" : "#d3d3d38c",
-                borderRadius: "25px",
-                color: sortByValue === -1 ? "white" : "black",
-              }}
-            >
-              Price High to Low
-            </Button>
-          </Box>
-
-          <Box
-            display="flex"
-            flexWrap="wrap"
-            gap={1}
-            justifyContent="space-between"
-          >
-            <TextField
-              placeholder="Search Products"
-              value={searchQuery}
-              onChange={handleSearchChange}
-              InputProps={{
-                endAdornment: searchQuery && (
-                  <InputAdornment position="end">
-                    <IconButton
-                      onClick={() => {
-                        setSearchQuery(""); // Clear the search query state
-
-                        // Navigate to the same page without passing the searchQuery in location.state
-                        navigate(location.pathname, {
-                          replace: true, // Ensures that the current entry in history is replaced
-                          state: {
-                            ...location.state, // Retain other location state values if any
-                            searchQuery: "", // Clear the searchQuery in location.state
-                          },
-                        });
-                      }}
-                      size="small"
-                    >
-                      <ClearIcon />
-                    </IconButton>
-                  </InputAdornment>
-                ),
-              }}
-              sx={{
-                width: "250px",
-                "& .MuiOutlinedInput-input": {
-                  padding: "5px 10px",
-                  fontSize: "12px",
-                },
-                "& .MuiOutlinedInput-root": {
-                  paddingRight: 0, // Removes padding-right
-                },
-              }}
-            />
-            <Button sx={{ p: 0, textTransform: "none", color: "black" }}>
-              Total {searchQuery ? searchResults.length : productsCount}{" "}
-              Products
-            </Button>
-          </Box>
-        </Box>
-      </Box>
-      <Box
-        display="flex"
-        flexWrap="wrap"
-        gap={3}
-        justifyContent="flex-start"
-        sx={{ margin: "20px 20px" }}
-      >
-        {searchLoading ? (
-          // Show a loading spinner for search results while data is being fetched
-          <Box
-            display="flex"
-            justifyContent="center"
-            alignItems="center"
-            width="100%"
-          >
-            <CircularProgress />
-          </Box>
-        ) : searchQuery && searchResults.length === 0 ? (
-          <Typography variant="h6" color="text.secondary" align="center">
-            No products found for "{searchQuery}"
-          </Typography>
-        ) : error ? (
-          // Show errors if any API issues occurred
-          <Typography variant="h6" color="error" align="center">
-            {error}
-          </Typography>
-        ) : selectedCategoryId &&
-          (searchQuery ? searchResults : products).length === 0 ? (
-          // Show message if no products are found for the selected category
-          <Typography variant="h6" color="text.secondary" align="center">
-            No products found under this category.
-          </Typography>
-        ) : industry &&
-          (searchQuery ? searchResults : products).length === 0 ? (
-          // Show message if no products are found for the selected category
-          <Typography variant="h6" color="text.secondary" align="center">
-            No products found under this Industry.
-          </Typography>
-        ) : (
-          // Render filtered products based on selected category or search query
-          (searchQuery ? searchResults : products).map((product) => (
-            <Box
-              key={product.id}
-              width={{
-                xs: "100%",
-                sm: "calc(50% - 24px)",
-                md: "calc(25% - 24px)",
-              }}
-              mb={3}
-            >
-              <Card
-                onClick={() => handleProductClick(product.id)}
-                style={{
-                  height: "350px",
-                  display: "flex",
-                  flexDirection: "column",
-                  justifyContent: "flex-start",
-                  cursor: "pointer",
-                }}
-              >
-                <Box position="relative">
-                  <CardMedia
-                    component="img"
-                    height="150"
-                    image={
-                      product.logo &&
-                      (product.logo.startsWith("http://example.com")
-                        ? soonImg
-                        : product.logo.startsWith("http") ||
-                            product.logo.startsWith("https")
-                          ? product.logo
-                          : soonImg)
-                    }
-                    alt={product.name}
-                    sx={{
-                      objectFit: "contain",
-                      boxShadow: "0px 0px 2px rgba(0, 0, 0, 0.1)", // Light shadow
-                    }}
-                  />
-
-                  {product.discount > 0 &&
-                    product.price.toFixed(2) !==
-                      product.was_price.toFixed(2) && (
-                      <Box
-                        position="absolute"
-                        top={8}
-                        left={8}
-                        bgcolor="primary.main"
-                        color="white"
-                        px={1}
-                        py={0.5}
-                        borderRadius={1}
-                        zIndex={1}
-                        fontSize={8}
-                      >
-                        {`${product.discount}% OFF`}
-                      </Box>
+                  >
+                    {categories.length > 0 ? (
+                      categories.map((tab, index) => (
+                        <Tab
+                          key={tab.id}
+                          disableRipple
+                          label={tab.name}
+                          sx={{
+                            fontSize: "12px",
+                            textTransform: "capitalize",
+                            borderRadius: "50px",
+                            padding: "0px 15px",
+                            border: "1px solid",
+                            borderColor:
+                              value === index ? "primary.main" : "grey.400",
+                            color: value === index ? "white" : "text.primary",
+                            transition: "all 0.3s",
+                            margin: "0px 5px",
+                            minHeight: "30px",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                          }}
+                        />
+                      ))
+                    ) : (
+                      <Typography variant="body2" sx={{ padding: "10px" }}>
+                        No category and products available under this Industry
+                      </Typography>
                     )}
+                  </Tabs>
 
-                  <Box position="absolute" bottom={4} left={8}>
-                    <Tooltip title="Compare Products" arrow>
-                      <CompareArrowsOutlinedIcon sx={{ color: "#615e5e" }} />
-                    </Tooltip>
+                  <Box>
+                    <FormControl fullWidth sx={{ minWidth: "200px" }}>
+                      <Select
+                        sx={{ fontSize: "14px" }}
+                        id="industry-select"
+                        value={industry ? industry.id : ""}
+                        onChange={handleIndustryChange}
+                        displayEmpty
+                        placeholder="Select Industry" // This will act as a placeholder
+                      >
+                        <MenuItem disabled sx={{ fontSize: "14px" }} value="">
+                          Select Industry
+                        </MenuItem>
+                        {industryList.length > 0 ? (
+                          industryList.map((item) => (
+                            <MenuItem
+                              sx={{ fontSize: "14px" }}
+                              key={item.id}
+                              value={item.id}
+                            >
+                              {item.name}
+                            </MenuItem>
+                          ))
+                        ) : (
+                          <MenuItem disabled>
+                            <em>No industry available</em>
+                          </MenuItem>
+                        )}
+                      </Select>
+                    </FormControl>
                   </Box>
+                </Box>
+              </Box>
 
-                  <Box position="absolute" bottom={4} right={8}>
-                  <IconButton
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    if (product.is_wishlist) {
-                      removeFromWishlist(product.wishlist_id, product.id);
-                    } else {
-                      addToWishlist(product.id);
-                    }
-                  }}
+              <Box
+                display="flex"
+                flexWrap="wrap"
+                justifyContent="space-between"
+                marginBottom={"25px"}
+                gap={1}
+                sx={{ margin: "0px 10px" }}
+              >
+                <Box
+                  display="flex"
+                  flexWrap="wrap"
+                  justifyContent="flex-start"
+                  gap={1}
                 >
-                  {product.is_wishlist ? (
-                    <FavoriteIcon sx={{ color: '#f2419b' , fontSize:'20px' }} />
-                  ) : (
-                    <FavoriteBorderIcon sx={{fontSize:'20px'}} />
-                  )}
-                </IconButton>
-                  </Box>
-
-
-                  <Tooltip title="Quick View" arrow>
-                    <PostAddIcon
-                      fontSize="inherit"
-                      style={{
-                        fontSize: "25px",
-                        position: "absolute",
-                        top: 8,
-                        right: 8,
-                        backgroundColor: "#fff",
-                        color: "#615e5e",
-                        zIndex: 1,
-                        cursor: "pointer",
-                      }}
-                      onClick={(e) => {
-                        e.stopPropagation(); // Prevent card click
-                        handleOpen(product);
-                      }}
-                    />
-                  </Tooltip>
+                  <Button
+                    onClick={() => handleSortChange(1)}
+                    sx={{
+                      fontSize: "11px",
+                      fontWeight: 500,
+                      padding: "3px 10px",
+                      textTransform: "none",
+                      backgroundColor:
+                        sortByValue === 1 ? "primary.main" : "#d3d3d38c",
+                      borderRadius: "25px",
+                      color: sortByValue === 1 ? "white" : "black",
+                    }}
+                  >
+                    Price Low to High
+                  </Button>
+                  <Button
+                    onClick={() => handleSortChange(-1)}
+                    sx={{
+                      fontSize: "11px",
+                      fontWeight: 500,
+                      padding: "3px 10px",
+                      textTransform: "none",
+                      backgroundColor:
+                        sortByValue === -1 ? "primary.main" : "#d3d3d38c",
+                      borderRadius: "25px",
+                      color: sortByValue === -1 ? "white" : "black",
+                    }}
+                  >
+                    Price High to Low
+                  </Button>
                 </Box>
 
-                <CardContent
-                  sx={{
-                    padding: "8px !important",
-                    height: "100%",
-                    display: "flex",
-                    flexDirection: "column",
-                    justifyContent: "space-between",
-                  }}
+                <Box
+                  display="flex"
+                  flexWrap="wrap"
+                  gap={1}
+                  justifyContent="space-between"
                 >
-                  <Box>
-                    <Tooltip title={product.name}>
-                      <Typography
-                        variant="subtitle1"
-                        style={{
-                          lineHeight: "22px",
-                          marginBottom: "10px",
-                          overflow: "hidden",
-                          textOverflow: "ellipsis",
-                          display: "-webkit-box", // Required for line clamping
-                          WebkitBoxOrient: "vertical", // Sets the orientation of the box
-                          WebkitLineClamp: 2, // Limits text to 2 lines
+                  <TextField
+                    placeholder="Search Products"
+                    value={searchQuery}
+                    onChange={handleSearchChange}
+                    InputProps={{
+                      endAdornment: searchQuery && (
+                        <InputAdornment position="end">
+                          <IconButton
+                            onClick={() => {
+                              setSearchQuery(""); // Clear the search query state
+
+                              // Navigate to the same page without passing the searchQuery in location.state
+                              navigate(location.pathname, {
+                                replace: true, // Ensures that the current entry in history is replaced
+                                state: {
+                                  ...location.state, // Retain other location state values if any
+                                  searchQuery: "", // Clear the searchQuery in location.state
+                                },
+                              });
+                            }}
+                            size="small"
+                          >
+                            <ClearIcon />
+                          </IconButton>
+                        </InputAdornment>
+                      ),
+                    }}
+                    sx={{
+                      width: "250px",
+                      "& .MuiOutlinedInput-input": {
+                        padding: "5px 10px",
+                        fontSize: "12px",
+                      },
+                      "& .MuiOutlinedInput-root": {
+                        paddingRight: 0, // Removes padding-right
+                      },
+                    }}
+                  />
+                  <Button sx={{ p: 0, textTransform: "none", color: "black" }}>
+                    Total {searchQuery ? searchResults.length : productsCount}{" "}
+                    Products
+                  </Button>
+                </Box>
+              </Box>
+            </Box>
+            <Box
+              display="flex"
+              flexWrap="wrap"
+              gap={3}
+              justifyContent="flex-start"
+              sx={{ margin: "20px 10px" }}
+            >
+              {searchLoading ? (
+                // Show a loading spinner for search results while data is being fetched
+                <Box
+                  display="flex"
+                  justifyContent="center"
+                  alignItems="center"
+                  width="100%"
+                >
+                  <CircularProgress />
+                </Box>
+              ) : searchQuery && searchResults.length === 0 ? (
+                <Typography variant="h6" color="text.secondary" align="center">
+                  No products found for "{searchQuery}"
+                </Typography>
+              ) : error ? (
+                // Show errors if any API issues occurred
+                <Typography variant="h6" color="error" align="center">
+                  {error}
+                </Typography>
+              ) : selectedCategoryId &&
+                (searchQuery ? searchResults : products).length === 0 ? (
+                // Show message if no products are found for the selected category
+                <Typography variant="h6" color="text.secondary" align="center">
+                  No products found under this category.
+                </Typography>
+              ) : industry &&
+                (searchQuery ? searchResults : products).length === 0 ? (
+                // Show message if no products are found for the selected category
+                <Typography variant="h6" color="text.secondary" align="center">
+                  No products found under this Industry.
+                </Typography>
+              ) : (
+                // Render filtered products based on selected category or search query
+                (searchQuery ? searchResults : products).map((product) => (
+                  <Box
+                    key={product.id}
+                    width={{
+                      xs: "100%",
+                      sm: "calc(50% - 24px)",
+                      md: "calc(25% - 24px)",
+                    }}
+                    mb={3}
+                  >
+                    <Card
+                      onClick={() => handleProductClick(product.id)}
+                      style={{
+                        height: "350px",
+                        display: "flex",
+                        flexDirection: "column",
+                        justifyContent: "flex-start",
+                        cursor: "pointer",
+                      }}
+                    >
+                      <Box position="relative">
+                        <CardMedia
+                          component="img"
+                          height="150"
+                          image={
+                            product.logo &&
+                            (product.logo.startsWith("http://example.com")
+                              ? soonImg
+                              : product.logo.startsWith("http") ||
+                                  product.logo.startsWith("https")
+                                ? product.logo
+                                : soonImg)
+                          }
+                          alt={product.name}
+                          sx={{
+                            objectFit: "contain",
+                            boxShadow: "0px 0px 2px rgba(0, 0, 0, 0.1)", // Light shadow
+                          }}
+                        />
+
+                        {product.discount > 0 &&
+                          product.price.toFixed(2) !==
+                            product.was_price.toFixed(2) && (
+                            <Box
+                              position="absolute"
+                              top={8}
+                              left={8}
+                              bgcolor="primary.main"
+                              color="white"
+                              px={1}
+                              py={0.5}
+                              borderRadius={1}
+                              zIndex={1}
+                              fontSize={8}
+                            >
+                              {`${product.discount}% OFF`}
+                            </Box>
+                          )}
+
+                        <Box position="absolute" bottom={4} left={8}>
+                          <Tooltip title="Compare Products" arrow>
+                            <CompareArrowsOutlinedIcon
+                              sx={{ color: "#615e5e" }}
+                            />
+                          </Tooltip>
+                        </Box>
+
+                        <Box position="absolute" bottom={4} right={8}>
+                          <IconButton
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (product.is_wishlist) {
+                                removeFromWishlist(
+                                  product.wishlist_id,
+                                  product.id
+                                );
+                              } else {
+                                addToWishlist(product.id);
+                              }
+                            }}
+                          >
+                            {product.is_wishlist ? (
+                              <FavoriteIcon
+                                sx={{ color: "#f2419b", fontSize: "20px" }}
+                              />
+                            ) : (
+                              <FavoriteBorderIcon sx={{ fontSize: "20px" }} />
+                            )}
+                          </IconButton>
+                        </Box>
+
+                        <Tooltip title="Quick View" arrow>
+                          <PostAddIcon
+                            fontSize="inherit"
+                            style={{
+                              fontSize: "25px",
+                              position: "absolute",
+                              top: 8,
+                              right: 8,
+                              backgroundColor: "#fff",
+                              color: "#615e5e",
+                              zIndex: 1,
+                              cursor: "pointer",
+                            }}
+                            onClick={(e) => {
+                              e.stopPropagation(); // Prevent card click
+                              handleOpen(product);
+                            }}
+                          />
+                        </Tooltip>
+                      </Box>
+
+                      <CardContent
+                        sx={{
+                          padding: "8px !important",
+                          height: "100%",
+                          display: "flex",
+                          flexDirection: "column",
+                          justifyContent: "space-between",
                         }}
                       >
-                        {product.name}
-                        {/* {product.name.length > 15
+                        <Box>
+                          <Tooltip title={product.name}>
+                            <Typography
+                              variant="subtitle1"
+                              style={{
+                                lineHeight: "22px",
+                                marginBottom: "10px",
+                                overflow: "hidden",
+                                textOverflow: "ellipsis",
+                                display: "-webkit-box", // Required for line clamping
+                                WebkitBoxOrient: "vertical", // Sets the orientation of the box
+                                WebkitLineClamp: 2, // Limits text to 2 lines
+                              }}
+                            >
+                              {product.name}
+                              {/* {product.name.length > 15
                   ? `${product.name.slice(0, 100)}`
                   : product.name} */}
-                      </Typography>
-                    </Tooltip>
+                            </Typography>
+                          </Tooltip>
 
-                    <Box
-                      sx={{
-                        mt: 1,
-                        display: "flex",
-                        gap: "10px",
-                        alignItems: "center",
-                        flexWrap: "wrap",
-                      }}
-                    >
-                      <Typography sx={{ fontSize: "12px" }}>
-                        SKU: {product.sku_number}
-                      </Typography>
-                      <Typography sx={{ fontSize: "12px" }}>
-                        MPN: {product.mpn}
-                      </Typography>
-                    </Box>
+                          <Box
+                            sx={{
+                              mt: 1,
+                              display: "flex",
+                              gap: "10px",
+                              alignItems: "center",
+                              flexWrap: "wrap",
+                            }}
+                          >
+                            <Typography sx={{ fontSize: "12px" }}>
+                              SKU: {product.sku_number}
+                            </Typography>
+                            <Typography sx={{ fontSize: "12px" }}>
+                              MPN: {product.mpn}
+                            </Typography>
+                          </Box>
 
-                    <Typography sx={{ mt: 1, fontSize: "12px" }}>
-                      MSRP : {product.currency}
-                      {product.msrp.toFixed(2)}
-                    </Typography>
+                          <Typography sx={{ mt: 1, fontSize: "12px" }}>
+                            MSRP : {product.currency}
+                            {product.msrp.toFixed(2)}
+                          </Typography>
 
-                    <Box
-                      sx={{
-                        mt: 1,
-                        display: "flex",
-                        gap: "10px",
-                        alignItems: "center",
-                        flexWrap: "wrap",
-                      }}
-                    >
-                      <Typography variant="body1" color="text.primary">
-                        {product.currency}
-                        {product.price.toFixed(2)}
-                      </Typography>
+                          <Box
+                            sx={{
+                              mt: 1,
+                              display: "flex",
+                              gap: "10px",
+                              alignItems: "center",
+                              flexWrap: "wrap",
+                            }}
+                          >
+                            <Typography variant="body1" color="text.primary">
+                              {product.currency}
+                              {product.price.toFixed(2)}
+                            </Typography>
 
-                      <Typography
-                        variant="body2"
-                        color="text.secondary"
-                        style={
-                          product.price.toFixed(2) ===
-                          product.was_price.toFixed(2)
-                            ? { textDecoration: "none" }
-                            : { textDecoration: "line-through" }
-                        }
-                      >
-                        Was:{product.currency}
-                        {product.was_price.toFixed(2)}
-                      </Typography>
-                    </Box>
+                            <Typography
+                              variant="body2"
+                              color="text.secondary"
+                              style={
+                                product.price.toFixed(2) ===
+                                product.was_price.toFixed(2)
+                                  ? { textDecoration: "none" }
+                                  : { textDecoration: "line-through" }
+                              }
+                            >
+                              Was:{product.currency}
+                              {product.was_price.toFixed(2)}
+                            </Typography>
+                          </Box>
+                        </Box>
+
+                        <Box
+                          display="flex"
+                          justifyContent="space-between"
+                          alignItems="flex-end"
+                          gap={"8px"}
+                          mt={2}
+                        >
+                          <Box
+                            sx={{
+                              display: "flex",
+                              gap: "10px",
+                              alignItems: "flex-end",
+                              justifyContent: "flex-end",
+                            }}
+                          >
+                            <TextField
+                              type="number"
+                              variant="outlined"
+                              size="small"
+                              value={quantity[product.id] || 1}
+                              onClick={(e) => e.stopPropagation()}
+                              onChange={(e) => {
+                                e.stopPropagation(); // Prevent card click
+                                handleQuantityChange(
+                                  product.id,
+                                  parseInt(e.target.value) || 1
+                                );
+                              }}
+                              inputProps={{
+                                min: 1,
+                                style: {
+                                  padding: "4px 8px",
+                                  fontSize: "10px",
+                                },
+                              }}
+                              style={{ width: "50px" }}
+                            />
+
+                            <IconButton
+                              sx={{
+                                backgroundColor: "none",
+                                color: "#615e5e",
+                                padding: "0",
+                              }}
+                              onClick={(e) => {
+                                e.stopPropagation(); // Prevent card click
+                                handleAddToCart(
+                                  product,
+                                  quantity[product.id] || 1
+                                );
+                              }}
+                            >
+                              <ShoppingCartOutlinedIcon sx={{ padding: "0" }} />
+                            </IconButton>
+                          </Box>
+                        </Box>
+                      </CardContent>
+                    </Card>
                   </Box>
-
-                  <Box
-                    display="flex"
-                    justifyContent="space-between"
-                    alignItems="flex-end"
-                    gap={"8px"}
-                    mt={2}
-                  >
-                    <Box
-                      sx={{
-                        display: "flex",
-                        gap: "10px",
-                        alignItems: "flex-end",
-                        justifyContent: "flex-end",
-                      }}
-                    >
-                      <TextField
-                        type="number"
-                        variant="outlined"
-                        size="small"
-                        value={quantity[product.id] || 1}
-                        onClick={(e) => e.stopPropagation()}
-                        onChange={(e) => {
-                          e.stopPropagation(); // Prevent card click
-                          handleQuantityChange(
-                            product.id,
-                            parseInt(e.target.value) || 1
-                          );
-                        }}
-                        inputProps={{
-                          min: 1,
-                          style: {
-                            padding: "4px 8px",
-                            fontSize: "10px",
-                          },
-                        }}
-                        style={{ width: "50px" }}
-                      />
-
-                      <IconButton
-                        sx={{
-                          backgroundColor: "none",
-                          color: "#615e5e",
-                          padding: "0",
-                        }}
-                        onClick={(e) => {
-                          e.stopPropagation(); // Prevent card click
-                          handleAddToCart(product, quantity[product.id] || 1);
-                        }}
-                      >
-                        <ShoppingCartOutlinedIcon sx={{ padding: "0" }} />
-                      </IconButton>
-                    </Box>
-                  </Box>
-                </CardContent>
-              </Card>
+                ))
+              )}
             </Box>
-          ))
-        )}
-      </Box>
 
-      {/* Pagination Component */}
-      <Stack
-        spacing={2}
-        sx={{ mt: 3, justifyContent: "center", alignItems: "center" }}
-      >
-        <Pagination
-          count={totalPages} // The total number of pages
-          page={page} // Current page
-          onChange={(_, value) => setPage(value)} // Change page when a new page is selected
-          color="primary"
-          shape="rounded"
-          size="large"
-        />
-      </Stack>
+            {/* Pagination Component */}
+            <Stack
+              spacing={2}
+              sx={{ mt: 3, justifyContent: "center", alignItems: "center" }}
+            >
+              <Pagination
+                count={totalPages} // The total number of pages
+                page={page} // Current page
+                onChange={(_, value) => setPage(value)} // Change page when a new page is selected
+                color="primary"
+                shape="rounded"
+                size="large"
+              />
+            </Stack>
 
-      <ToastContainer
-        position="bottom-right"
-        autoClose={1000}
-        hideProgressBar
-        newestOnTop
-        closeOnClick
-        rtl={false}
-        pauseOnFocusLoss
-        draggable
-        pauseOnHover
-      />
+            <ToastContainer
+              position="bottom-right"
+              autoClose={1000}
+              hideProgressBar
+              newestOnTop
+              closeOnClick
+              rtl={false}
+              pauseOnFocusLoss
+              draggable
+              pauseOnHover
+            />
 
-      <ProductModal
-        open={open}
-        onClose={handleClose}
-        product={selectedProduct}
-        handleAddToCart={handleAddToCart}
-      />
-
-      {/* <ProductBrand industryId={industry?.id} /> */}
-      <Sidebar industryId={industry?.id} />
+            <ProductModal
+              open={open}
+              onClose={handleClose}
+              product={selectedProduct}
+              handleAddToCart={handleAddToCart}
+            />
+          </Box>
+        </Grid>
+      </Grid>
     </div>
   );
 };

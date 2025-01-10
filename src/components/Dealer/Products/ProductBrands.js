@@ -1,4 +1,4 @@
-// src\components\Dealer\Products\ProductCategory.js
+// src\components\Dealer\Products\ProductBrands.js
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import {
@@ -16,13 +16,14 @@ import {
 } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
 
-const ProductSidebar = ({ industryId }) => {
+const ProductBrand = ({ industryId , onBrandChange}) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [brands, setBrands] = useState([]);
   const [open, setOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedBrandIds, setSelectedBrandIds] = useState([]); // State for selected brand IDs
+  const [selectedBrands, setSelectedBrands] = useState([]); 
+
 
   useEffect(() => {
     const fetchBrands = async () => {
@@ -67,18 +68,22 @@ const ProductSidebar = ({ industryId }) => {
   const handleOpen = () => setOpen(true);
   const handleClose = () => setOpen(false);
 
-  // Handle brand selection
   const handleBrandSelection = (brandId) => {
-    setSelectedBrandIds((prevSelected) => {
-      const isSelected = prevSelected.includes(brandId);
-      const updatedSelection = isSelected
-        ? prevSelected.filter((id) => id !== brandId)
-        : [...prevSelected, brandId];
-      console.log("Selected Brand IDs:", updatedSelection);
-      return updatedSelection;
-    });
-  };
+    const updatedBrands = selectedBrands.includes(brandId)
+      ? selectedBrands.filter((id) => id !== brandId)
+      : [...selectedBrands, brandId];
+    setSelectedBrands(updatedBrands);
+    console.log("Selected Brands:", updatedBrands);
 
+    if (onBrandChange) {
+      onBrandChange({
+        updatedBrands,
+      });
+    }
+  };
+  
+
+  
 
 
   // Filter brands for search
@@ -126,7 +131,7 @@ const ProductSidebar = ({ industryId }) => {
                   key={brand.id}
                   control={
                     <Checkbox
-                      checked={selectedBrandIds.includes(brand.id)}
+                      checked={selectedBrands.includes(brand.id)}
                       onChange={() => handleBrandSelection(brand.id)}
                     />
                   }
@@ -191,7 +196,7 @@ const ProductSidebar = ({ industryId }) => {
                       <FormControlLabel
                         control={
                           <Checkbox
-                            checked={selectedBrandIds.includes(brand.id)}
+                            checked={selectedBrands.includes(brand.id)}
                             onChange={() => handleBrandSelection(brand.id)}
                           />
                         }
@@ -213,4 +218,4 @@ const ProductSidebar = ({ industryId }) => {
   );
 };
 
-export default ProductSidebar;
+export default ProductBrand;

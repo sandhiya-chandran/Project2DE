@@ -17,8 +17,6 @@ import ProductDetailPage from '../Products/ProductDetailPage';
 import DealerProfile from '../Dashboard/DealerProfile';
 import OrdersRedirect from '../Products/OrdersRedirect';
 import WishList from '../Products/Wishlist';
-import Test from '../Products/test';
-
 import { Button , Tooltip } from "@mui/material";
 import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
 
@@ -33,6 +31,13 @@ const DealerDashboard = () => {
   
   const user = JSON.parse(localStorage.getItem("user"));
 
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false); // Default to closed
+
+  const toggleSidebar = () => {
+    setIsSidebarOpen((prev) => !prev);
+  };
+
+ 
   useEffect(() => {
     fetchUserDetails(); // Call the function inside useEffect
   }, [user.id]);
@@ -93,16 +98,19 @@ const DealerDashboard = () => {
     fetchCartCount();
   }, []);
 
+ 
   
   return (
     <Box sx={{ display: 'flex' }}>
-         <Sidebar />
+    <Sidebar isOpen={isSidebarOpen} toggleSidebar={toggleSidebar} />
          <Box component="main" sx={{ flexGrow: 1, p: 3 }}>
-         <NotificationBar userData={userData} cartCount={cartCount} fetchCartCount={fetchCartCount} className="sticky-notification-bar"/>
+         <NotificationBar toggleSidebar={toggleSidebar}  userData={userData} cartCount={cartCount} fetchCartCount={fetchCartCount} className="sticky-notification-bar"/>
+           
+        
+
            <Routes>
              <Route path="/" element={<DealerHome/>} />
              <Route path="orders" element={<Orders />} />
-             <Route path="test" element={<Test />} />
              <Route path="settings" element={<Settings/>} />
              <Route path="cart" element={<CartPage fetchCartCount={fetchCartCount} />} />
              <Route path="checkout" element={<CheckoutPage fetchCartCount={fetchCartCount} />} />
