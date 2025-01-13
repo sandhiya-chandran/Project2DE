@@ -23,6 +23,7 @@ import {
   TablePagination,
   Tooltip,
   Menu,
+  Grid
 } from "@mui/material";
 import {
   Visibility,
@@ -40,6 +41,7 @@ import OutlinedInput from "@mui/material/OutlinedInput"; // Add this line
 import soonImg from "../../assets/soon-img.png";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import CancelIcon from "@mui/icons-material/Cancel";
+import ProductBrand from "./ProductBrands";
 
 function ProductList() {
   const location = useLocation();
@@ -71,6 +73,116 @@ function ProductList() {
   const [isSomeSelected, setIsSomeSelected] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState("All Categories");
   const searchTimeout = useRef(null);
+   const [industryList, setIndustryList] = useState([]); // Stores all available industries
+  const [industry, setIndustry] = useState(null);
+   const [value, setValue] = useState(-1);
+   const [selectedBrandIds, setSelectedBrandIds] = useState([]);
+   
+  const userData = localStorage.getItem("user");
+
+   // Fetch data asynchronously with filters, category, and sorting
+   const fetchData = async (
+    filters = "all",
+    selectedCategory = null,
+    industry = null,
+    key,
+    direction
+  ) => {
+
+    console.log("Selected Brand IDs inside fetchData:", selectedBrandIds);
+    const industryId = industry?.id || "";
+    const categoryId = selectedCategory?.id || ""; // Use selectedCategory.id safely
+    const isParent = selectedCategory?.is_parent || false; // Ensure is_parent is handled
+
+    setLoading(true);
+    setError("");
+
+    try {
+      const userData = localStorage.getItem("user");
+      let manufactureUnitId = "";
+
+      if (userData) {
+        const data = JSON.parse(userData);
+        manufactureUnitId = data.manufacture_unit_id;
+      }
+
+      const sort_by_value =
+        direction === "asc" ? 1 : direction === "desc" ? -1 : "";
+      const payload = {
+        manufacture_unit_id: manufactureUnitId,
+        product_category_id: categoryId,
+        industry_id: industryId,
+        filters: filters,
+        sort_by: key || "",
+        sort_by_value: sort_by_value,
+        is_parent: isParent, // Correctly set is_parent
+        brand_id_list: selectedBrandIds,
+      };
+
+      const response = await axios.post(
+        `${process.env.REACT_APP_IP}obtainProductsList/`,
+        payload
+      );
+
+      const products = response.data.data || [];
+      setItems(products); // Update default product list
+      setFilteredItems(products); // Initialize filtered items
+    } catch (err) {
+      setError("Failed to load items");
+      console.error("Error fetching products:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleBrandChange = ({ updatedBrands }) => {
+    console.log("Updated selected brands PL:", updatedBrands);
+    setSelectedBrandIds(updatedBrands);
+  };
+
+  useEffect(() => {
+    fetchData(filters, selectedCategory, industry, sortConfig.key, sortConfig.direction);
+  }, [selectedBrandIds]);
+  
+
+  // Fetch industries on component mount
+  useEffect(() => {
+    const fetchIndustry = async () => {
+      try {
+        let manufactureUnitId = "";
+
+        if (userData) {
+          const data = JSON.parse(userData);
+          manufactureUnitId = data.manufacture_unit_id;
+        }
+
+        const IndustryResponse = await axios.get(
+          `${process.env.REACT_APP_IP}obtainIndustryForManufactureUnit/?manufacture_unit_id=${manufactureUnitId}`
+        );
+
+        setIndustryList(IndustryResponse.data.data || []); // Set industries in state
+      } catch (err) {
+        console.error("Error fetching Industry:", err); // Log any errors
+      }
+    };
+
+    fetchIndustry(); // Trigger the API call
+  }, []);
+
+  const handleIndustryChange = (event) => {
+    setValue(-1);
+    const selectedIndustryId = event.target.value;
+    const selectedIndustry = industryList.find(
+      (item) => item.id === selectedIndustryId
+    );
+    setIndustry(selectedIndustry);
+   setSelectedBrandIds([]);
+    // selectedCategory(null);
+  };
+
+  useEffect(() => {
+    fetchData(filters, selectedCategory, industry, sortConfig.key, sortConfig.direction);
+  }, [filters, selectedCategory, industry, sortConfig.key, sortConfig.direction]);
 
   const getValidationMessage = (wasPrice, price) => {
     if (Number(price) > Number(wasPrice)) {
@@ -170,54 +282,7 @@ function ProductList() {
     }
   };
 
-  // Fetch data asynchronously with filters, category, and sorting
-  const fetchData = async (
-    filters = "all",
-    selectedCategory = null,
-    key,
-    direction
-  ) => {
-    const categoryId = selectedCategory?.id || ""; // Use selectedCategory.id safely
-    const isParent = selectedCategory?.is_parent || false; // Ensure is_parent is handled
-
-    setLoading(true);
-    setError("");
-
-    try {
-      const userData = localStorage.getItem("user");
-      let manufactureUnitId = "";
-
-      if (userData) {
-        const data = JSON.parse(userData);
-        manufactureUnitId = data.manufacture_unit_id;
-      }
-
-      const sort_by_value =
-        direction === "asc" ? 1 : direction === "desc" ? -1 : "";
-      const payload = {
-        manufacture_unit_id: manufactureUnitId,
-        product_category_id: categoryId,
-        filters: filters,
-        sort_by: key || "",
-        sort_by_value: sort_by_value,
-        is_parent: isParent, // Correctly set is_parent
-      };
-
-      const response = await axios.post(
-        `${process.env.REACT_APP_IP}obtainProductsList/`,
-        payload
-      );
-
-      const products = response.data.data || [];
-      setItems(products); // Update default product list
-      setFilteredItems(products); // Initialize filtered items
-    } catch (err) {
-      setError("Failed to load items");
-      console.error("Error fetching products:", err);
-    } finally {
-      setLoading(false);
-    }
-  };
+ 
 
   // Fetch initial categories and products on mount
   useEffect(() => {
@@ -244,6 +309,7 @@ function ProductList() {
 
     fetchInitialData();
   }, []);
+
 
   const handleOpenBulkEdit = async () => {
     if (selectedCategory && !searchTerm) {
@@ -685,7 +751,28 @@ function ProductList() {
   if (error) return <div>{error}</div>;
 
   return (
-    <div style={{ marginBottom: "25px" }}>
+
+    <div>
+       <Grid container spacing={1}>
+       <Grid item xs={12} md={1.5} >
+       <Box
+      sx={{
+        position: "sticky",
+        top: "56px", // Adjust this value based on the height of your header or top bar
+        height: "calc(100vh - 56px)", // Ensure it occupies the full height below the header
+        overflowY: "auto", // Allow scrolling inside if needed
+        boxShadow: "0px 0px 2px rgba(0, 0, 0, 0.1)", // Light shadow
+      }}
+    >
+      <ProductBrand
+        industryId={industry?.id}
+        onBrandChange={handleBrandChange}
+        // selectedCategoryId={selectedCategoryId}
+      />
+    </Box>
+       </Grid>
+       <Grid item xs={12} md={10.5}>
+       <div style={{ marginBottom: "25px" }}>
       <Box
         display="flex"
         alignItems="center"
@@ -699,6 +786,37 @@ function ProductList() {
           zIndex: 9,
         }}
       >
+         <Box sx={{marginRight: "10px"}}>
+                            <FormControl fullWidth sx={{ minWidth: "200px" }}>
+                              <Select
+                                sx={{ fontSize: "14px" }}
+                                id="industry-select"
+                                value={industry ? industry.id : ""}
+                                onChange={handleIndustryChange}
+                                displayEmpty
+                                placeholder="Select Industry" // This will act as a placeholder
+                              >
+                                <MenuItem disabled sx={{ fontSize: "14px" }} value="">
+                                  Select Industry
+                                </MenuItem>
+                                {industryList.length > 0 ? (
+                                  industryList.map((item) => (
+                                    <MenuItem
+                                      sx={{ fontSize: "14px" }}
+                                      key={item.id}
+                                      value={item.id}
+                                    >
+                                      {item.name}
+                                    </MenuItem>
+                                  ))
+                                ) : (
+                                  <MenuItem disabled>
+                                    <em>No industry available</em>
+                                  </MenuItem>
+                                )}
+                              </Select>
+                            </FormControl>
+                          </Box>
         {/* Filter Dropdown */}
         <div style={{ maxWidth: "500px" }}>
           <FormControl>
@@ -1401,6 +1519,10 @@ function ProductList() {
       {isPopupOpen && <PopupModal onClose={() => setIsPopupOpen(false)} />}
       <PopupModal open={isPopupOpen} onClose={handleClosePopup} />
     </div>
+       </Grid>
+       </Grid>
+    </div>
+    
   );
 }
 

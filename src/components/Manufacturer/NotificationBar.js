@@ -1,10 +1,11 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Box, Typography, IconButton } from '@mui/material';
+import { Box, Typography, IconButton , Tooltip} from '@mui/material';
 import NotificationsIcon from '@mui/icons-material/Notifications';
 import AccountCircleIcon from '@mui/icons-material/AccountCircle';
+import MenuIcon from '@mui/icons-material/Menu'; 
 
-const NotificationBar = () => {
+const NotificationBar = ({toggleSidebar}) => {
   const navigate = useNavigate(); // Use navigate hook for routing
 
   const user = JSON.parse(localStorage.getItem("user"));
@@ -27,8 +28,20 @@ const NotificationBar = () => {
       justifyContent: 'space-between',
       alignItems: 'center',
     }}>
-      <Typography variant="h6">B2B-OP Seller</Typography>  
-      
+
+<Box sx={{ display: "flex", alignItems: "center", gap:'20px' }}>
+         {/* Toggle Sidebar Button (Menu Icon) */}
+       <Tooltip title="Toggle Sidebar" arrow>
+          <IconButton
+            sx={{ color: "white" }}
+            onClick={toggleSidebar}
+          >
+            <MenuIcon  fontSize="18px"/>
+          </IconButton>
+        </Tooltip>
+        
+      <Typography variant="h6" fontSize={18}>B2B-OP Seller</Typography>
+      </Box>
 
       <Box sx={{ display: 'flex', alignItems: 'center' }}>
       

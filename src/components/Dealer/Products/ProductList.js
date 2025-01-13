@@ -36,7 +36,6 @@ import { tabsClasses } from "@mui/material/Tabs";
 import { useNavigate } from "react-router-dom";
 import FavoriteBorderIcon from "@mui/icons-material/FavoriteBorder";
 import FavoriteIcon from "@mui/icons-material/Favorite";
-import Sidebar from "../sidebar";
 import ProductBrand from "./ProductBrands";
 
 const ProductList = ({ fetchCartCount }) => {
@@ -274,7 +273,8 @@ const ProductList = ({ fetchCartCount }) => {
       (item) => item.id === selectedIndustryId
     );
     setIndustry(selectedIndustry);
-    setSelectedCategoryId(null); // Store the full industry object
+    setSelectedCategoryId(null); 
+    setSelectedBrandIds(null);
   };
 
   const handleChange = (event, newValue) => {
@@ -546,6 +546,7 @@ const ProductList = ({ fetchCartCount }) => {
       <ProductBrand
         industryId={industry?.id}
         onBrandChange={handleBrandChange}
+        selectedCategoryId={selectedCategoryId}
       />
     </Box>
         </Grid>

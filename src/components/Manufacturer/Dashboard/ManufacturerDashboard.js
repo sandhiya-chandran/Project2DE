@@ -24,6 +24,12 @@ import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
 const ManufacturerDashboard = () => {
   const [isVisible, setIsVisible] = useState(false);
 
+    const [isSidebarOpen, setIsSidebarOpen] = useState(false); // Default to closed
+  
+    const toggleSidebar = () => {
+      setIsSidebarOpen((prev) => !prev);
+    };
+
   const handleScroll = () => {
     if (window.scrollY > 300) {
       setIsVisible(true);
@@ -51,9 +57,9 @@ const ManufacturerDashboard = () => {
 
   return (
     <Box sx={{ display: "flex" }}>
-      <Sidebar />
+      <Sidebar isOpen={isSidebarOpen} toggleSidebar={toggleSidebar}/>
       <Box component="main" sx={{ flexGrow: 1, p: 3 }}>
-        <NotificationBar />
+        <NotificationBar toggleSidebar={toggleSidebar} />
         <Routes>
           <Route path="/" element={<ManufacturerHome />} />
           <Route path="userProfile" element={<UserProfile />} />

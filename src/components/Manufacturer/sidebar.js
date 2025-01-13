@@ -9,10 +9,10 @@ import ListItemText from '@mui/material/ListItemText';
 import Divider from '@mui/material/Divider';
 import Logout from '../Login/Logout';
 import { Dashboard, Receipt, ShoppingCart, People, Settings, ExitToApp } from '@mui/icons-material'; // Import icons
+import CloseIcon from '@mui/icons-material/Close';
+const drawerWidth = 230;
 
-const drawerWidth = 200;
-
-const Sidebar = () => {
+const Sidebar = ({ isOpen , toggleSidebar }) => {
   const location = useLocation(); // Get the current location (route)
   
   const getActiveStyle = (path) => {
@@ -22,19 +22,28 @@ const Sidebar = () => {
   };
 
   return (
-    <Drawer
-      sx={{
-        width: drawerWidth,
-        flexShrink: 0,
-        '& .MuiDrawer-paper': {
-          width: drawerWidth,
-          boxSizing: 'border-box',
-        },
-      }}
-      variant="permanent"
-      anchor="left"
-    >
-      <List>
+   <Drawer
+           variant="temporary"
+           open={isOpen}
+           onClose={toggleSidebar}
+           ModalProps={{
+             keepMounted: true, // Better performance on mobile
+           }}
+           sx={{
+             '& .MuiDrawer-paper': {
+               width: drawerWidth,
+               boxSizing: 'border-box',
+             },
+           }}
+         >
+
+      <List sx={{ p: 0 }}>
+      <ListItem disablePadding >
+                    <ListItemButton onClick={toggleSidebar} sx={{ justifyContent: 'flex-end' , px:0 , py:1}}>
+                        <CloseIcon sx={{ mr: 1 }} /> 
+                    </ListItemButton>
+                </ListItem>
+                
         <ListItem disablePadding>
           <ListItemButton component={Link} to="/manufacturer" sx={getActiveStyle('/manufacturer')}>
             <Dashboard sx={{ mr: 1 }} /> {/* Dashboard Icon */}

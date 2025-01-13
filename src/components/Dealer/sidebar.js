@@ -4,6 +4,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { Box, Drawer, List, ListItem, ListItemButton, ListItemText, Divider } from '@mui/material';
 import Logout from '../Login/Logout'; 
 import { Dashboard, Receipt, Settings, ShoppingCart } from '@mui/icons-material'; 
+import CloseIcon from '@mui/icons-material/Close';
 const drawerWidth = 230;
 
 const Sidebar = ({ isOpen , toggleSidebar }) => {
@@ -32,7 +33,12 @@ const Sidebar = ({ isOpen , toggleSidebar }) => {
           },
         }}
       >
-            <List>
+            <List sx={{ p: 0 }}>
+            <ListItem disablePadding >
+                    <ListItemButton onClick={toggleSidebar} sx={{ justifyContent: 'flex-end' , px:0 , py:1}}>
+                        <CloseIcon sx={{ mr: 1 }} /> 
+                    </ListItemButton>
+                </ListItem>
                 <ListItem disablePadding>
                     <ListItemButton component={Link} to="/dealer" sx={getActiveStyle('/dealer')} onClick={toggleSidebar}>
                         <Dashboard sx={{ mr: 1 }} /> 
