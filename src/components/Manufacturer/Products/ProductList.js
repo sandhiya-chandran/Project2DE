@@ -1,4 +1,5 @@
-import React, { useState, useEffect , useRef  } from "react";
+// src\components\Manufacturer\Products\ProductList.js
+import React, { useState, useEffect, useRef } from "react";
 import axios from "axios";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import {
@@ -23,7 +24,7 @@ import {
   TablePagination,
   Tooltip,
   Menu,
-  Grid
+  Grid,
 } from "@mui/material";
 import {
   Visibility,
@@ -34,10 +35,8 @@ import {
 import PopupModal from "./PopupModel";
 import SearchIcon from "@mui/icons-material/Search";
 import FileDownloadOutlinedIcon from "@mui/icons-material/FileDownloadOutlined";
-import RefreshIcon from "@mui/icons-material/Refresh";
 import "react-toastify/dist/ReactToastify.css"; // Import the CSS file
 import { ToastContainer, toast } from "react-toastify";
-import OutlinedInput from "@mui/material/OutlinedInput"; // Add this line
 import soonImg from "../../assets/soon-img.png";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import CancelIcon from "@mui/icons-material/Cancel";
@@ -73,22 +72,77 @@ function ProductList() {
   const [isSomeSelected, setIsSomeSelected] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState("All Categories");
   const searchTimeout = useRef(null);
-   const [industryList, setIndustryList] = useState([]); // Stores all available industries
+  const [industryList, setIndustryList] = useState([]); // Stores all available industries
   const [industry, setIndustry] = useState(null);
-   const [value, setValue] = useState(-1);
-   const [selectedBrandIds, setSelectedBrandIds] = useState([]);
-   
+  const [value, setValue] = useState(-1);
+  const [selectedBrandIds, setSelectedBrandIds] = useState([]);
+  const [selectedParent, setSelectedParent] = useState(""); // Selected parent category ID
+  const [childCategories, setChildCategories] = useState([]); // Child categories
+  const [selectedChild, setSelectedChild] = useState(""); // Selected child category ID
+
   const userData = localStorage.getItem("user");
 
-   // Fetch data asynchronously with filters, category, and sorting
-   const fetchData = async (
+  
+  const handleReload = () => {
+    window.location.reload(); // Reloads the current browser window
+  };
+
+
+  const handleClearAll = () => {
+    setSelectedBrandIds([]);
+
+    if (searchTerm) {
+      setSearchTerm("");
+    } else {
+      // fetchData("all", "");
+      setSelectedCategory("");
+      setSelectedParent("");
+      setSelectedChild("");
+      setIndustry(null);
+      refreshData();
+    }
+    setFilteredItems(items); // Reset to full product list (assuming `items` is your full product list)
+    setPage(0); // Reset to the first page
+
+    // Clear search query from location state and replace the history entry
+    navigate(location.pathname, {
+      replace: true, // Replace the current entry in the history stack
+      state: {
+        ...location.state, // Retain other location state if any
+        searchQuery: "", // Clear the searchQuery in location.state
+      },
+    });
+  };
+
+  const refreshData = async () => {
+    try {
+      const userData = localStorage.getItem("user");
+      let manufactureUnitId = "";
+      if (userData) {
+        const data = JSON.parse(userData);
+        manufactureUnitId = data.manufacture_unit_id;
+      }
+      const categoryResponse = await axios.get(
+        `${process.env.REACT_APP_IP}obtainProductCategoryList/?manufacture_unit_id=${manufactureUnitId}`
+      );
+      setCategories(categoryResponse.data.data || []);
+      // Fetch items
+      // fetchData("all");
+    } catch (error) {}
+  };
+
+  useEffect(() => {
+    refreshData();
+  }, []);
+
+  // Fetch data asynchronously with filters, category, and sorting
+  const fetchData = async (
     filters = "all",
     selectedCategory = null,
     industry = null,
     key,
     direction
   ) => {
-
     console.log("Selected Brand IDs inside fetchData:", selectedBrandIds);
     const industryId = industry?.id || "";
     const categoryId = selectedCategory?.id || ""; // Use selectedCategory.id safely
@@ -135,15 +189,27 @@ function ProductList() {
     }
   };
 
+  useEffect(() => {
+    fetchData(
+      filters,
+      selectedCategory,
+      industry,
+      sortConfig.key,
+      sortConfig.direction
+    );
+  }, [
+    filters,
+    selectedCategory,
+    industry,
+    sortConfig.key,
+    sortConfig.direction,
+    selectedBrandIds,
+  ]);
+
   const handleBrandChange = ({ updatedBrands }) => {
     console.log("Updated selected brands PL:", updatedBrands);
     setSelectedBrandIds(updatedBrands);
   };
-
-  useEffect(() => {
-    fetchData(filters, selectedCategory, industry, sortConfig.key, sortConfig.direction);
-  }, [selectedBrandIds]);
-  
 
   // Fetch industries on component mount
   useEffect(() => {
@@ -176,13 +242,12 @@ function ProductList() {
       (item) => item.id === selectedIndustryId
     );
     setIndustry(selectedIndustry);
-   setSelectedBrandIds([]);
-    // selectedCategory(null);
-  };
+    setSelectedBrandIds([]);
 
-  useEffect(() => {
-    fetchData(filters, selectedCategory, industry, sortConfig.key, sortConfig.direction);
-  }, [filters, selectedCategory, industry, sortConfig.key, sortConfig.direction]);
+    setSelectedCategory(null);
+    setSelectedParent("");
+    setSelectedChild("");
+  };
 
   const getValidationMessage = (wasPrice, price) => {
     if (Number(price) > Number(wasPrice)) {
@@ -205,85 +270,6 @@ function ProductList() {
     }
   }, [searchTerm]); // This effect runs when searchTerm state changes
 
-  useEffect(() => {
-    refreshData();
-  }, []);
-
-  const refreshData = async () => {
-    try {
-      const userData = localStorage.getItem("user");
-      let manufactureUnitId = "";
-      if (userData) {
-        const data = JSON.parse(userData);
-        manufactureUnitId = data.manufacture_unit_id;
-      }
-      const categoryResponse = await axios.get(
-        `${process.env.REACT_APP_IP}obtainProductCategoryList/?manufacture_unit_id=${manufactureUnitId}`
-      );
-      setCategories(categoryResponse.data.data || []);
-
-      // Fetch items
-      fetchData("all");
-    } catch (error) {}
-  };
-
-  const handleCategory = async (categoryId, isParent = false) => {
-    if (isParent) {
-      const userData = localStorage.getItem("user");
-      let manufactureUnitId = "";
-
-      if (userData) {
-        const data = JSON.parse(userData);
-        manufactureUnitId = data.manufacture_unit_id;
-      }
-
-      try {
-        const categoryResponse = await axios.get(
-          `${process.env.REACT_APP_IP}obtainProductCategoryList/?manufacture_unit_id=${manufactureUnitId}&product_category_id=${categoryId}`
-        );
-
-        const categoryData = categoryResponse.data.data || [];
-        if (categoryData.length === 0) {
-          fetchData("", categoryId, isParent); // Pass correct categoryId
-        } else {
-          const selectedCategory =
-            categoryData.find((cat) => cat.id === categoryId) ||
-            categoryData[0]; // Ensure correct category is selected
-          setCategories(categoryData);
-          setCategorySearch(selectedCategory);
-          fetchData("all", selectedCategory); // Pass the correct selectedCategory
-        }
-      } catch (error) {
-        console.error("Error fetching category data:", error);
-      }
-    } else {
-      fetchData("", categoryId, isParent); // For non-parent categories
-    }
-  };
-
-  const handleCategorySelect = (categoryName) => {
-    if (searchTerm) {
-      handleClearAll();
-    }
-    setSelectedCategory(categoryName);
-    const selectedCategoryObj = categories.find(
-      (category) => category.name === categoryName
-    );
-
-    if (selectedCategoryObj) {
-      if (
-        !selectedCategoryObj.is_parent &&
-        !selectedCategoryObj.subCategories
-      ) {
-        fetchData("", selectedCategoryObj); // Pass the correct selectedCategoryObj
-      } else {
-        handleCategory(selectedCategoryObj.id, selectedCategoryObj.is_parent); // Pass id and isParent
-      }
-    }
-  };
-
- 
-
   // Fetch initial categories and products on mount
   useEffect(() => {
     const fetchInitialData = async () => {
@@ -300,7 +286,12 @@ function ProductList() {
         const categoryResponse = await axios.get(
           `${process.env.REACT_APP_IP}obtainProductCategoryList/?manufacture_unit_id=${manufactureUnitId}`
         );
-        setCategories(categoryResponse.data.data || []);
+
+        const parentCategories = categoryResponse.data.data.filter(
+          (category) => category.is_parent
+        );
+
+        setCategories(parentCategories);
 
         // Fetch initial product list for all categories
         await fetchData();
@@ -310,6 +301,34 @@ function ProductList() {
     fetchInitialData();
   }, []);
 
+  // Fetch child categories when a parent is selected
+  useEffect(() => {
+    const fetchChildCategories = async () => {
+      if (!selectedParent) {
+        setChildCategories([]); // Reset child categories if no parent selected
+        return;
+      }
+
+      try {
+        const userData = localStorage.getItem("user");
+        let manufactureUnitId = "";
+
+        if (userData) {
+          const data = JSON.parse(userData);
+          manufactureUnitId = data.manufacture_unit_id;
+        }
+
+        const response = await axios.get(
+          `${process.env.REACT_APP_IP}obtainProductCategoryList/?manufacture_unit_id=${manufactureUnitId}&product_category_id=${selectedParent}&is_parent=true`
+        );
+        setChildCategories(response.data.data || []);
+      } catch (error) {
+        console.error("Error fetching child categories:", error);
+      }
+    };
+
+    fetchChildCategories();
+  }, [selectedParent]);
 
   const handleOpenBulkEdit = async () => {
     if (selectedCategory && !searchTerm) {
@@ -383,29 +402,7 @@ function ProductList() {
     setIsPopupOpen(false);
   };
 
-  const handleClearAll = () => {
-    if (searchTerm) {
-      setSearchTerm("");
-    } else {
-      fetchData("all", "");
-      setSelectedCategory("All Categories");
-      refreshData();
-    }
-    setFilteredItems(items); // Reset to full product list (assuming `items` is your full product list)
-    setPage(0); // Reset to the first page
-
-    // Clear search query from location state and replace the history entry
-    navigate(location.pathname, {
-      replace: true, // Replace the current entry in the history stack
-      state: {
-        ...location.state, // Retain other location state if any
-        searchQuery: "", // Clear the searchQuery in location.state
-      },
-    });
-  };
-
   const handleSearchChange = async (event) => {
-
     if (event && event.stopPropagation) {
       event.stopPropagation();
     }
@@ -417,41 +414,60 @@ function ProductList() {
     if (searchTimeout.current) {
       clearTimeout(searchTimeout.current);
     }
-    
+
     searchTimeout.current = setTimeout(async () => {
-    try {
-      // const query = event.target.value.trim();
-     
-      const trimmedQuery = query.trim();
+      try {
+        // const query = event.target.value.trim();
 
-      // Fetch user data
-      const userData = localStorage.getItem("user");
-      let manufactureUnitId = "";
+        const trimmedQuery = query.trim();
 
-      if (userData) {
-        const data = JSON.parse(userData);
-        manufactureUnitId = data.manufacture_unit_id;
-      }
+        // Fetch user data
+        const userData = localStorage.getItem("user");
+        let manufactureUnitId = "";
 
-      console.log("Selected Category:", selectedCategory);
+        if (userData) {
+          const data = JSON.parse(userData);
+          manufactureUnitId = data.manufacture_unit_id;
+        }
 
-      if (trimmedQuery) {
-        // Perform product search
-        const response = await axios.post(
-          `${process.env.REACT_APP_IP}productSearch/`,
-          {
-            manufacture_unit_id: manufactureUnitId,
-            search_query: trimmedQuery,
+        console.log("Selected Category:", selectedCategory);
+
+        if (trimmedQuery) {
+          // Perform product search
+          const response = await axios.post(
+            `${process.env.REACT_APP_IP}productSearch/`,
+            {
+              manufacture_unit_id: manufactureUnitId,
+              search_query: trimmedQuery,
+            }
+          );
+
+          if (response.data) {
+            console.log("Search Results:", response.data);
+            const result = response.data.data || [];
+            setFilteredItems(result);
+            setPage(0);
+
+            // If productCategoryList API was triggered, reset selected category
+            if (selectedCategory) {
+              const categoryResponse = await axios.get(
+                `${process.env.REACT_APP_IP}obtainProductCategoryList/?manufacture_unit_id=${manufactureUnitId}`
+              );
+
+              if (categoryResponse.data) {
+                setCategories(categoryResponse.data.data || []);
+              }
+
+              // Reset the dropdown to show "All Categories"
+              setSelectedCategory("All Categories");
+            }
           }
-        );
-
-        if (response.data) {
-          console.log("Search Results:", response.data);
-          const result = response.data.data || [];
-          setFilteredItems(result);
+        } else {
+          // Reset to initial state
+          setFilteredItems(items);
           setPage(0);
 
-          // If productCategoryList API was triggered, reset selected category
+          // If no query, fetch product categories and reset dropdown
           if (selectedCategory) {
             const categoryResponse = await axios.get(
               `${process.env.REACT_APP_IP}obtainProductCategoryList/?manufacture_unit_id=${manufactureUnitId}`
@@ -461,33 +477,13 @@ function ProductList() {
               setCategories(categoryResponse.data.data || []);
             }
 
-            // Reset the dropdown to show "All Categories"
             setSelectedCategory("All Categories");
           }
         }
-      } else {
-        // Reset to initial state
-        setFilteredItems(items);
-        setPage(0);
-
-        // If no query, fetch product categories and reset dropdown
-        if (selectedCategory) {
-          const categoryResponse = await axios.get(
-            `${process.env.REACT_APP_IP}obtainProductCategoryList/?manufacture_unit_id=${manufactureUnitId}`
-          );
-
-          if (categoryResponse.data) {
-            setCategories(categoryResponse.data.data || []);
-          }
-
-          setSelectedCategory("All Categories");
-        }
+      } catch (error) {
+        console.error("Error during search:", error);
       }
-    } catch (error) {
-      console.error("Error during search:", error);
-    }
-    
-  },1000);
+    }, 1000);
   };
 
   const handleSearchIconClick = () => {
@@ -731,6 +727,10 @@ function ProductList() {
           setFilteredItems(matchedItems);
         }
       }
+
+      setSelectedItems(new Set());
+      setIsAllSelected(false);
+      setIsSomeSelected(false);
     } catch (err) {
       setError("Failed to update products");
       console.error("Error during bulk edit:", err);
@@ -751,570 +751,720 @@ function ProductList() {
   if (error) return <div>{error}</div>;
 
   return (
-
     <div>
-       <Grid container spacing={1}>
-       <Grid item xs={12} md={1.5} >
-       <Box
-      sx={{
-        position: "sticky",
-        top: "56px", // Adjust this value based on the height of your header or top bar
-        height: "calc(100vh - 56px)", // Ensure it occupies the full height below the header
-        overflowY: "auto", // Allow scrolling inside if needed
-        boxShadow: "0px 0px 2px rgba(0, 0, 0, 0.1)", // Light shadow
-      }}
-    >
-      <ProductBrand
-        industryId={industry?.id}
-        onBrandChange={handleBrandChange}
-        // selectedCategoryId={selectedCategoryId}
-      />
-    </Box>
-       </Grid>
-       <Grid item xs={12} md={10.5}>
-       <div style={{ marginBottom: "25px" }}>
-      <Box
-        display="flex"
-        alignItems="center"
-        justifyContent="flex-end"
-        mb={2}
-        sx={{
-          backgroundColor: "white",
-          position: "sticky",
-          top: "55px",
-          padding: "10px 0px",
-          zIndex: 9,
-        }}
-      >
-         <Box sx={{marginRight: "10px"}}>
-                            <FormControl fullWidth sx={{ minWidth: "200px" }}>
-                              <Select
-                                sx={{ fontSize: "14px" }}
-                                id="industry-select"
-                                value={industry ? industry.id : ""}
-                                onChange={handleIndustryChange}
-                                displayEmpty
-                                placeholder="Select Industry" // This will act as a placeholder
-                              >
-                                <MenuItem disabled sx={{ fontSize: "14px" }} value="">
-                                  Select Industry
-                                </MenuItem>
-                                {industryList.length > 0 ? (
-                                  industryList.map((item) => (
-                                    <MenuItem
-                                      sx={{ fontSize: "14px" }}
-                                      key={item.id}
-                                      value={item.id}
-                                    >
-                                      {item.name}
-                                    </MenuItem>
-                                  ))
-                                ) : (
-                                  <MenuItem disabled>
-                                    <em>No industry available</em>
-                                  </MenuItem>
-                                )}
-                              </Select>
-                            </FormControl>
-                          </Box>
-        {/* Filter Dropdown */}
-        <div style={{ maxWidth: "500px" }}>
-          <FormControl>
-            <Select
-              className="my-custom-class"
-              value={selectedCategory}
-              onChange={(e) => handleCategorySelect(e.target.value)}
-              input={<OutlinedInput />}
-              sx={{
-                fontSize: "14px", // Customize font size
-                padding: "0px", // Customize padding inside Select
-              }}
-              MenuProps={{
-                PaperProps: {
-                  style: {
-                    maxHeight: "250px", // Set the minimum height
-                  },
-                },
-              }}
-            >
-              <MenuItem
-                value="All Categories"
-                onClick={(e) => {
-                  e.stopPropagation(); // Prevent closing dropdown when clicked
-                  setSelectedCategory("All Categories"); // Set dropdown title to All Categories
-                  refreshData(); // Refresh data to show all items
-                }}
-              >
-                All Categories
-              </MenuItem>
-              {categories.length > 0 ? (
-                categories.map((category) => (
-                  <MenuItem key={category.id} value={category.name}>
-                    {category.name}
-                  </MenuItem>
-                ))
-              ) : (
-                <MenuItem disabled>No categories available</MenuItem>
-              )}
-            </Select>
-          </FormControl>
-        </div>
-        {/* Bulk Edit Buttons */}
-        <Button
-          onClick={handleOpenBulkEdit}
-          variant="outlined"
-          color="primary"
-          sx={{
-            marginLeft: "10px",
-            fontSize: "12px",
-            textTransform: "capitalize",
-          }}
-        >
-          {isBulkEditing ? "Cancel Edit" : "Bulk Edit"}
-        </Button>
-
-        <Button
-          onClick={handleBulkEditSubmit}
-          variant="outlined"
-          color="secondary"
-          sx={{
-            marginLeft: "10px",
-            fontSize: "12px",
-            textTransform: "capitalize",
-          }}
-          disabled={selectedItems.size === 0 || loading || !isBulkEditing} // Disable if loading or not in bulk editing mode
-        >
-          Submit Edit
-        </Button>
-        <ToastContainer />
-        <TextField
-          variant="outlined"
-          placeholder="Discount"
-          size="small"
-          disabled={!isBulkEditing} // Disabled if not in bulk edit mode
-          value={discountValue} // Controlled input, value from state
-          onChange={handleDiscountValueChange} // Update state when input changes
-          sx={{
-            marginLeft: "5px",
-            fontSize: "12px",
-            width: "70px",
-            paddingRight: "6px",
-          }}
-          InputProps={{
-            style: { fontSize: "12px" }, // Adjust font size for input text
-          }}
-        />
-        <FormControl
-          size="small"
-          sx={{
-            marginLeft: "5px",
-            minWidth: 70,
-            height: "31px",
-            marginTop: "-2px",
-            margin: "1px",
-          }}
-        >
-          <Select
-            value={discountUnit}
-            onChange={handleDiscountUnitChange}
-            sx={{ height: "33px" }}
-            disabled={!isBulkEditing} // Disable if not in bulk edit mode
-          >
-            <MenuItem value="%">%</MenuItem>
-            <MenuItem value="$">$</MenuItem>
-          </Select>
-        </FormControl>
-        <Box display="flex" alignItems="center" sx={{ marginLeft: "10px" }}>
-          {!isSearchOpen ? (
-            <IconButton
-              sx={{ width: "60px", height: "60px" }} // Increase button size
-              onClick={handleSearchIconClick}
-              aria-label="search"
-            >
-              <SearchIcon sx={{ fontSize: "36px" }} />{" "}
-              {/* Increase icon size */}
-            </IconButton>
-          ) : (
-            <>
-              <TextField
-                variant="outlined"
-                placeholder="Search..."
-                value={searchTerm}
-                onChange={handleSearchChange} // Only use this handler
-                // onKeyPress={(event) => {
-                //   // Prevent space key press at the start or end
-                //   if (
-                //     event.key === " " &&
-                //     (searchTerm.trim() === "" ||
-                //       searchTerm.startsWith(" ") ||
-                //       searchTerm.endsWith(" "))
-                //     // (!searchTerm || searchTerm.trim() === "")
-                //   ) {
-                //     event.preventDefault();
-                //   }
-                // }}
-                size="small"
-                onBlur={handleSearchBlur}
-                autoFocus
-                sx={{ width: 250 }}
-                InputProps={{
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <SearchIcon sx={{ fontSize: "20px" }} />{" "}
-                      {/* Adjust size in input */}
-                    </InputAdornment>
-                  ),
-                  style: { fontSize: "11px" },
-                }}
-              />
-            </>
-          )}
-        </Box>
-        {/* Only show "Clear all" when search field is open */}
-        <Box
-          display="flex"
-          alignItems="center"
-          sx={{ marginLeft: "10px", width: "56px" }}
-        >
-          <Button
-            onClick={handleClearAll}
-            variant="contained"
+      <Grid container spacing={1}>
+        <Grid item xs={12} md={1.5}>
+          <Box
             sx={{
-              display: "flex",
-              width: "20px",
-              height: "30px",
-              fontSize: "10px",
-              alignItems: "center",
-              textTransform: "capitalize",
+              position: "sticky",
+              top: "56px", // Adjust this value based on the height of your header or top bar
+              height: "calc(100vh - 56px)", // Ensure it occupies the full height below the header
+              overflowY: "auto", // Allow scrolling inside if needed
+              boxShadow: "0px 0px 2px rgba(0, 0, 0, 0.1)", // Light shadow
             }}
           >
-            Clear
-          </Button>
-        </Box>
-
-        {/* Import File Button */}
-        <Tooltip title="Import File" arrow>
-          <IconButton
-            color="primary"
-            style={{ marginLeft: "10px" }}
-            onClick={handleOpenPopup}
-          >
-            <FileDownloadOutlinedIcon
-              sx={{
-                fontSize: "40px",
-                color: "#1976d2",
-              }}
+            <ProductBrand
+              industryId={industry?.id}
+              selectedCategoryId={selectedCategory?.id} // Pass selected category ID
+              isParent={selectedCategory?.is_parent || false} // Pass isParent based on selectedCategory
+              onBrandChange={handleBrandChange}
+              selectedBrand={selectedBrandIds}
             />
-          </IconButton>
-        </Tooltip>
-      </Box>
+          </Box>
+        </Grid>
+        <Grid item xs={12} md={10.5} p={0}>
+          <div style={{ marginBottom: "25px" }}>
+            <Box
+              sx={{
+                backgroundColor: "white",
+                position: "sticky",
+                top: "55px",
+                padding: "10px 15px",
+                zIndex: 9,
+              }}
+            >
+              <Box display="flex" alignItems="center" justifyContent="flex-end">
+                {/* Parent Category Dropdown  */}
+                <Box sx={{ marginRight: "10px" }}>
+                  <FormControl fullWidth sx={{ minWidth: "200px" }}>
+                    <Select
+                      sx={{ fontSize: "14px" }}
+                      id="parent-category-select"
+                      value={selectedParent}
+                      onChange={(e) => {
+                        const selectedParentCategory = categories.find(
+                          (category) => category.id === e.target.value
+                        );
+                        setSelectedParent(e.target.value);
+                        setSelectedChild(""); // Reset child selection
+                        setSelectedCategory(selectedParentCategory); // Set selected category to selected parent category
+                      }}
+                      displayEmpty
+                    >
+                      <MenuItem disabled sx={{ fontSize: "14px" }} value="">
+                        Category Level 1
+                      </MenuItem>
+                      {categories.length > 0 ? (
+                        categories.map((category) => (
+                          <MenuItem
+                            sx={{ fontSize: "14px" }}
+                            key={category.id}
+                            value={category.id}
+                          >
+                            {category.name}
+                          </MenuItem>
+                        ))
+                      ) : (
+                        <MenuItem disabled>
+                          <em>No parent categories available</em>
+                        </MenuItem>
+                      )}
+                    </Select>
+                  </FormControl>
+                </Box>
 
-      <Box sx={{ display: "flex", justifyContent: "flex-end", margin: "1%" }}>
-        <Button sx={{ p: 0, mb: 1, textTransform: "none" }}>
-          Total Products : {filteredItems.length}
-        </Button>
-      </Box>
-      <Box sx={{ margin: "1%" }}>
-        <TableContainer component={Paper}>
-          <Table>
-            <TableHead>
-              <TableRow>
-                {isBulkEditing && (
-                  <TableCell sx={{ textAlign: "center" }}>
-                    <Checkbox
-                      checked={isAllSelected} // Check if all items are selected
-                      indeterminate={isSomeSelected} // Show indeterminate state if some items are selected
-                      onChange={handleSelectAll} // Handle the "Title" checkbox click
-                      disabled={!isBulkEditing} // Disable when bulk edit is not active
+                {/* Child Category Dropdown */}
+                <Box sx={{ marginRight: "10px" }}>
+                  <FormControl fullWidth sx={{ minWidth: "200px" }}>
+                    <Select
+                      sx={{ fontSize: "14px" }}
+                      id="child-category-select"
+                      value={selectedChild || ""} // Default to an empty string if no value is selected
+                      onChange={(e) => {
+                        setSelectedChild(e.target.value); // Update state correctly
+                        const selectedChildCategory = childCategories.find(
+                          (category) => category.id === e.target.value
+                        );
+                        setSelectedCategory(selectedChildCategory); // Set selected category to selected child category
+                      }}
+                      displayEmpty
+                      disabled={!selectedParent} // Disable if no parent is selected
+                    >
+                      {/* Placeholder option */}
+                      <MenuItem disabled sx={{ fontSize: "14px" }} value="">
+                        Category Level 2
+                      </MenuItem>
+
+                      {/* Render child categories */}
+                      {childCategories.length > 0 ? (
+                        childCategories.map((category) => (
+                          <MenuItem
+                            sx={{ fontSize: "14px" }}
+                            key={category.id}
+                            value={category.id}
+                          >
+                            {category.name}
+                          </MenuItem>
+                        ))
+                      ) : (
+                        <MenuItem disabled>
+                          <em>No child categories available</em>
+                        </MenuItem>
+                      )}
+                    </Select>
+                  </FormControl>
+                </Box>
+
+                {/* Industry Dropdown */}
+                <Box sx={{ marginRight: "10px" }}>
+                  <FormControl fullWidth sx={{ minWidth: "200px" }}>
+                    <Select
+                      sx={{ fontSize: "14px" }}
+                      id="industry-select"
+                      value={industry ? industry.id : ""}
+                      onChange={handleIndustryChange}
+                      displayEmpty
+                      placeholder="Select Industry" // This will act as a placeholder
+                    >
+                      <MenuItem disabled sx={{ fontSize: "14px" }} value="">
+                        Select Industry
+                      </MenuItem>
+                      {industryList.length > 0 ? (
+                        industryList.map((item) => (
+                          <MenuItem
+                            sx={{ fontSize: "14px" }}
+                            key={item.id}
+                            value={item.id}
+                          >
+                            {item.name}
+                          </MenuItem>
+                        ))
+                      ) : (
+                        <MenuItem disabled>
+                          <em>No industry available</em>
+                        </MenuItem>
+                      )}
+                    </Select>
+                  </FormControl>
+                </Box>
+
+                {/* Bulk Edit Buttons */}
+                <Button
+                  onClick={handleOpenBulkEdit}
+                  variant="outlined"
+                  color="primary"
+                  sx={{
+                    marginLeft: "10px",
+                    fontSize: "12px",
+                    textTransform: "capitalize",
+                  }}
+                >
+                  {isBulkEditing ? "Cancel Edit" : "Bulk Edit"}
+                </Button>
+
+                <Button
+                  onClick={handleBulkEditSubmit}
+                  variant="outlined"
+                  color="secondary"
+                  sx={{
+                    marginLeft: "10px",
+                    fontSize: "12px",
+                    textTransform: "capitalize",
+                  }}
+                  disabled={
+                    selectedItems.size === 0 || loading || !isBulkEditing
+                  } // Disable if loading or not in bulk editing mode
+                >
+                  Submit Edit
+                </Button>
+
+                <ToastContainer />
+                <TextField
+                  variant="outlined"
+                  placeholder="Discount"
+                  size="small"
+                  disabled={!isBulkEditing} // Disabled if not in bulk edit mode
+                  value={discountValue} // Controlled input, value from state
+                  onChange={handleDiscountValueChange} // Update state when input changes
+                  sx={{
+                    marginLeft: "5px",
+                    fontSize: "12px",
+                    width: "70px",
+                    paddingRight: "6px",
+                  }}
+                  InputProps={{
+                    style: { fontSize: "12px" }, // Adjust font size for input text
+                  }}
+                />
+                <FormControl
+                  size="small"
+                  sx={{
+                    marginLeft: "5px",
+                    minWidth: 70,
+                    height: "31px",
+                    marginTop: "-2px",
+                    margin: "1px",
+                  }}
+                >
+                  <Select
+                    value={discountUnit}
+                    onChange={handleDiscountUnitChange}
+                    sx={{ height: "33px" }}
+                    disabled={!isBulkEditing} // Disable if not in bulk edit mode
+                  >
+                    <MenuItem value="%">%</MenuItem>
+                    <MenuItem value="$">$</MenuItem>
+                  </Select>
+                </FormControl>
+                <Box
+                  display="flex"
+                  alignItems="center"
+                  sx={{ marginLeft: "10px" }}
+                >
+                  {!isSearchOpen ? (
+                    <IconButton
+                      sx={{ width: "60px", height: "60px" }} // Increase button size
+                      onClick={handleSearchIconClick}
+                      aria-label="search"
+                    >
+                      <SearchIcon sx={{ fontSize: "36px" }} />{" "}
+                      {/* Increase icon size */}
+                    </IconButton>
+                  ) : (
+                    <>
+                      <TextField
+                        variant="outlined"
+                        placeholder="Search..."
+                        value={searchTerm}
+                        onChange={handleSearchChange} // Only use this handler
+                        // onKeyPress={(event) => {
+                        //   // Prevent space key press at the start or end
+                        //   if (
+                        //     event.key === " " &&
+                        //     (searchTerm.trim() === "" ||
+                        //       searchTerm.startsWith(" ") ||
+                        //       searchTerm.endsWith(" "))
+                        //     // (!searchTerm || searchTerm.trim() === "")
+                        //   ) {
+                        //     event.preventDefault();
+                        //   }
+                        // }}
+                        size="small"
+                        onBlur={handleSearchBlur}
+                        autoFocus
+                        sx={{ width: 250 }}
+                        InputProps={{
+                          startAdornment: (
+                            <InputAdornment position="start">
+                              <SearchIcon sx={{ fontSize: "20px" }} />{" "}
+                              {/* Adjust size in input */}
+                            </InputAdornment>
+                          ),
+                          style: { fontSize: "11px" },
+                        }}
+                      />
+                    </>
+                  )}
+                </Box>
+                {/* Only show "Clear all" when search field is open */}
+                {/* <Box
+                  display="flex"
+                  alignItems="center"
+                  sx={{ marginLeft: "10px", width: "56px" }}
+                >
+                  <Button
+                    onClick={handleClearAll}
+                    variant="contained"
+                    sx={{
+                      display: "flex",
+                      width: "20px",
+                      height: "30px",
+                      fontSize: "10px",
+                      alignItems: "center",
+                      textTransform: "capitalize",
+                    }}
+                  >
+                    Clear
+                  </Button>
+                </Box> */}
+
+                {/* Import File Button */}
+                <Tooltip title="Import File" arrow>
+                  <IconButton
+                    color="primary"
+                    style={{ padding:0 }}
+                    onClick={handleOpenPopup}
+                  >
+                    <FileDownloadOutlinedIcon
+                      sx={{
+                        fontSize: "40px",
+                        color: "#1976d2",
+                      }}
                     />
-                  </TableCell>
-                )}
-
-                <TableCell sx={{ textAlign: "center" }}>Image</TableCell>
-                <TableCell sx={{ textAlign: "center" }}>
-                  SKU
-                  <IconButton
-                    onClick={(e) =>
-                      handleOpenMenu(e, "sku_number_product_code_item_number")
-                    }
-                  >
-                    <MoreVertIcon sx={{ fontSize: "14px" }} />
                   </IconButton>
-                </TableCell>
-                <TableCell sx={{ textAlign: "center" }}>MPN</TableCell>
-                <TableCell sx={{ textAlign: "center" }}>
-                  Product Name
-                  <IconButton
-                    onClick={(e) => handleOpenMenu(e, "product_name")}
+                </Tooltip>
+              </Box>
+
+              <Box display="flex" justifyContent="space-between">
+                <Box>
+                  <Button
+                    sx={{
+                      fontSize: "11px",
+                      fontWeight: 500,
+                      padding: "3px 10px",
+                      textTransform: "none",
+                      backgroundColor: "#d3d3d38c",
+                      borderRadius: "25px",
+                      color: "black",
+                    }}
+                    onClick={handleReload}
                   >
-                    <MoreVertIcon sx={{ fontSize: "14px" }} />
-                  </IconButton>
-                </TableCell>
-                <TableCell sx={{ textAlign: "center" }}>
-                  Brand
-                  <IconButton onClick={(e) => handleOpenMenu(e, "brand_name")}>
-                    <MoreVertIcon sx={{ fontSize: "14px" }} />
-                  </IconButton>
-                </TableCell>
-                <TableCell sx={{ textAlign: "center" }}>
-                  Category
-                  <IconButton
-                    onClick={(e) => handleOpenMenu(e, "end_level_category")}
-                  >
-                    <MoreVertIcon sx={{ fontSize: "14px" }} />
-                  </IconButton>
-                </TableCell>
-                <TableCell sx={{ textAlign: "center" }}>
-                  Stock
-                  <IconButton
-                    onClick={(e) => handleOpenMenu(e, "availability")}
-                  >
-                    <MoreVertIcon sx={{ fontSize: "14px" }} />
-                  </IconButton>
-                </TableCell>
+                    Clear filters
+                  </Button>
+                </Box>
+                <Box>
+                  <Button sx={{ p: 0, mb: 1, textTransform: "none" }}>
+                    Total Products : {filteredItems.length}
+                  </Button>
+                </Box>
+              </Box>
+            </Box>
 
-                <TableCell sx={{ textAlign: "center" }}>MSRP</TableCell>
-                <TableCell sx={{ textAlign: "center" }}>Was Price</TableCell>
-                <TableCell sx={{ textAlign: "center" }}>
-                  Price
-                  <IconButton onClick={(e) => handleOpenMenu(e, "price")}>
-                    <MoreVertIcon sx={{ fontSize: "14px" }} />
-                  </IconButton>
-                </TableCell>
-                <TableCell sx={{ textAlign: "center" }}>Visibility</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {loading ? (
-                <TableRow>
-                  <TableCell colSpan={12} align="center">
-                    <CircularProgress />
-                  </TableCell>
-                </TableRow>
-              ) : error ? (
-                <TableRow>
-                  <TableCell
-                    colSpan={12}
-                    align="center"
-                    style={{ color: "red" }}
-                  >
-                    {error}
-                  </TableCell>
-                </TableRow>
-              ) : !Array.isArray(filteredItems) ||
-                filteredItems.length === 0 ? (
-                <TableRow>
-                  <TableCell
-                    colSpan={12}
-                    align="center"
-                    sx={{ fontSize: "14px", color: "#888" }}
-                  >
-                    No Products Found
-                  </TableCell>
-                </TableRow>
-              ) : (
-                filteredItems
-                  .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-                  .map((item) => {
-                    // Ensure item is defined and has the required properties
-                    if (!item) return null;
-
-                    const editedFields = editedValues[item.id] || {}; // Safe access to editedValues
-                    const wasPrice = editedFields.was_price ?? item.was_price; // Fallback to original item value if not defined
-                    const price = editedFields.price ?? item.price; // Fallback to original item value if not defined
-
-                    const errorMessage =
-                      Number(price) > Number(wasPrice)
-                        ? "Price cannot exceed Was Price"
-                        : "";
-
-                    return (
-                      <TableRow key={item.id}>
-                        {isBulkEditing && (
-                          <TableCell sx={{ textAlign: "center" }}>
-                            <Checkbox
-                              checked={selectedItems.has(item.id)} // Check if the item is selected
-                              onChange={() => handleSelectItem(item.id)} // Handle individual row selection
-                              disabled={!isBulkEditing} // Disable when bulk editing is not active
-                            />
-                          </TableCell>
-                        )}
-
-                        <TableCell>
-                          <Link
-                            style={{ textDecoration: "none" }}
-                            to={`/manufacturer/products/details/${item.id}`}
-                            state={{ searchQuery: searchTerm }}
-                          >
-                            {item.logo &&
-                              (item.logo.startsWith("http://example.com") ? (
-                                <img
-                                  src={soonImg} // Replace `soonImg` with the variable or URL for the placeholder image
-                                  alt="Placeholder Logo"
-                                  style={{
-                                    width: 30,
-                                    height: 30,
-                                    borderRadius: "50%",
-                                    objectFit: "cover",
-                                  }}
-                                />
-                              ) : item.logo.startsWith("http") ||
-                                item.logo.startsWith("https") ? (
-                                <img
-                                  src={item.logo}
-                                  alt="Product Logo"
-                                  style={{
-                                    width: 30,
-                                    height: 30,
-                                    borderRadius: "50%",
-                                    objectFit: "cover",
-                                  }}
-                                />
-                              ) : (
-                                <img
-                                  src={soonImg} // Placeholder for invalid URLs
-                                  alt="Placeholder Logo"
-                                  style={{
-                                    width: 30,
-                                    height: 30,
-                                    borderRadius: "50%",
-                                    objectFit: "cover",
-                                  }}
-                                />
-                              ))}
-                          </Link>
+            <Box sx={{ margin: "0px 15px" }}>
+              <TableContainer component={Paper}>
+                <Table>
+                  <TableHead>
+                    <TableRow>
+                      {isBulkEditing && (
+                        <TableCell sx={{ textAlign: "center" }}>
+                          <Checkbox
+                            checked={isAllSelected} // Check if all items are selected
+                            indeterminate={isSomeSelected} // Show indeterminate state if some items are selected
+                            onChange={handleSelectAll} // Handle the "Title" checkbox click
+                            disabled={!isBulkEditing} // Disable when bulk edit is not active
+                          />
                         </TableCell>
+                      )}
 
-                        <TableCell>
-                          <Link
-                            style={{ textDecoration: "none", color: "inherit" }}
-                            to={`/manufacturer/products/details/${item.id}`}
-                            state={{ searchQuery: searchTerm }}
-                          >
-                            {item.sku_number_product_code_item_number}
-                          </Link>
-                        </TableCell>
-                        <TableCell>
-                        <Link
-                            style={{ textDecoration: "none", color: "inherit" }}
-                            to={`/manufacturer/products/details/${item.id}`}
-                            state={{ searchQuery: searchTerm }}
-                          >
-                           {item.mpn}
-                          </Link>
-                          </TableCell>
-                       
-                          <TableCell sx={{width:'250px'}}>
-                            <Link
-                              to={`/manufacturer/products/details/${item.id}`}
-                              state={{ searchQuery: searchTerm }}
-                              style={{
-                                display: "inline-block",
-                                textDecoration: "none",
-                                color: "inherit",
-                                maxWidth: "240px", // Optional: limit width for better control
-                                overflowWrap: "break-word", // Allow wrapping of long words
-                                wordWrap: "break-word", // For compatibility
-                                fontSize: "12px",
-                              }}
-                            >
-                              {item.product_name}
-                            </Link>
-                          </TableCell>
-                        
-                        <TableCell>{item.brand_name}</TableCell>
-                        <TableCell>{item.end_level_category}</TableCell>
-                        <TableCell>
-                          <TableCell sx={{ border: "none" }}>
-                            {item.availability ? (
-                              <Tooltip title="In-stock">
-                                <CheckCircleIcon style={{ color: "green" }} />
-                              </Tooltip>
-                            ) : (
-                              <Tooltip title="Out of stock">
-                                <CancelIcon style={{ color: "red" }} />
-                              </Tooltip>
-                            )}
-                          </TableCell>
-                        </TableCell>
-
-                        <TableCell>
-                          {isBulkEditing ? (
-                            <input
-                              style={{ width: "40px", fontSize: "10px" }}
-                              type="number"
-                              value={editedValues[item.id]?.msrp ?? item.msrp}
-                              onChange={(e) =>
-                                handleFieldChange(
-                                  item.id,
-                                  "msrp",
-                                  e.target.value
-                                )
-                              }
-                              disabled={!selectedItems.has(item.id)} // Disable if the item is not selected
-                            />
-                          ) : (
-                            item.msrp
-                          )}
-                        </TableCell>
-
-                        <TableCell>
-                          {isBulkEditing ? (
-                            <input
-                              style={{
-                                width: "40px",
-                                fontSize: "10px",
-                                color: errorMessage ? "red" : "inherit",
-                              }}
-                              type="number"
-                              value={wasPrice}
-                              onChange={(e) =>
-                                handleFieldChange(
-                                  item.id,
-                                  "was_price",
-                                  e.target.value
-                                )
-                              }
-                              disabled={!selectedItems.has(item.id)} // Disable if the item is not selected
-                            />
-                          ) : (
-                            item.was_price
-                          )}
-                        </TableCell>
-
-                        <TableCell>
-                          <Tooltip title={errorMessage || ""} arrow>
-                            {isBulkEditing ? (
-                              <input
-                                style={{
-                                  width: "40px",
-                                  fontSize: "10px",
-                                  color: errorMessage ? "red" : "inherit",
-                                }}
-                                type="number"
-                                value={price}
-                                onChange={(e) =>
-                                  handleFieldChange(
-                                    item.id,
-                                    "price",
-                                    e.target.value
-                                  )
-                                }
-                                disabled={!selectedItems.has(item.id)} // Disable if the item is not selected
-                              />
-                            ) : (
-                              item.price
-                            )}
-                          </Tooltip>
-                        </TableCell>
-
-                        <TableCell
-                          onClick={() => handleToggleVisibility(item.id)}
+                      <TableCell sx={{ textAlign: "center" }}>Image</TableCell>
+                      <TableCell sx={{ textAlign: "center" }}>
+                        SKU
+                        <IconButton
+                          onClick={(e) =>
+                            handleOpenMenu(
+                              e,
+                              "sku_number_product_code_item_number"
+                            )
+                          }
                         >
-                          {isBulkEditing ? (
-                            <IconButton disabled={!selectedItems.has(item.id)}>
-                              {editedVisibility[item.id] !== undefined ? (
-                                editedVisibility[item.id] ? (
+                          <MoreVertIcon sx={{ fontSize: "14px" }} />
+                        </IconButton>
+                      </TableCell>
+                      <TableCell sx={{ textAlign: "center" }}>MPN</TableCell>
+                      <TableCell sx={{ textAlign: "center" }}>
+                        Product Name
+                        <IconButton
+                          onClick={(e) => handleOpenMenu(e, "product_name")}
+                        >
+                          <MoreVertIcon sx={{ fontSize: "14px" }} />
+                        </IconButton>
+                      </TableCell>
+                      <TableCell sx={{ textAlign: "center" }}>
+                        Brand
+                        <IconButton
+                          onClick={(e) => handleOpenMenu(e, "brand_name")}
+                        >
+                          <MoreVertIcon sx={{ fontSize: "14px" }} />
+                        </IconButton>
+                      </TableCell>
+                      <TableCell sx={{ textAlign: "center" }}>
+                        Category
+                        <IconButton
+                          onClick={(e) =>
+                            handleOpenMenu(e, "end_level_category")
+                          }
+                        >
+                          <MoreVertIcon sx={{ fontSize: "14px" }} />
+                        </IconButton>
+                      </TableCell>
+                      <TableCell sx={{ textAlign: "center" }}>
+                        Stock
+                        <IconButton
+                          onClick={(e) => handleOpenMenu(e, "availability")}
+                        >
+                          <MoreVertIcon sx={{ fontSize: "14px" }} />
+                        </IconButton>
+                      </TableCell>
+
+                      <TableCell sx={{ textAlign: "center" }}>MSRP</TableCell>
+                      <TableCell sx={{ textAlign: "center" }}>
+                        Was Price
+                      </TableCell>
+                      <TableCell sx={{ textAlign: "center" }}>
+                        Price
+                        <IconButton onClick={(e) => handleOpenMenu(e, "price")}>
+                          <MoreVertIcon sx={{ fontSize: "14px" }} />
+                        </IconButton>
+                      </TableCell>
+                      <TableCell sx={{ textAlign: "center" }}>
+                        Visibility
+                      </TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {loading ? (
+                      <TableRow>
+                        <TableCell colSpan={12} align="center">
+                          <CircularProgress />
+                        </TableCell>
+                      </TableRow>
+                    ) : error ? (
+                      <TableRow>
+                        <TableCell
+                          colSpan={12}
+                          align="center"
+                          style={{ color: "red" }}
+                        >
+                          {error}
+                        </TableCell>
+                      </TableRow>
+                    ) : !Array.isArray(filteredItems) ||
+                      filteredItems.length === 0 ? (
+                      <TableRow>
+                        <TableCell
+                          colSpan={12}
+                          align="center"
+                          sx={{ fontSize: "14px", color: "#888" }}
+                        >
+                          No Products Found
+                        </TableCell>
+                      </TableRow>
+                    ) : (
+                      filteredItems
+                        .slice(
+                          page * rowsPerPage,
+                          page * rowsPerPage + rowsPerPage
+                        )
+                        .map((item) => {
+                          // Ensure item is defined and has the required properties
+                          if (!item) return null;
+
+                          const editedFields = editedValues[item.id] || {}; // Safe access to editedValues
+                          const wasPrice =
+                            editedFields.was_price ?? item.was_price; // Fallback to original item value if not defined
+                          const price = editedFields.price ?? item.price; // Fallback to original item value if not defined
+
+                          const errorMessage =
+                            Number(price) > Number(wasPrice)
+                              ? "Price cannot exceed Was Price"
+                              : "";
+
+                          return (
+                            <TableRow key={item.id}>
+                              {isBulkEditing && (
+                                <TableCell sx={{ textAlign: "center" }}>
+                                  <Checkbox
+                                    checked={selectedItems.has(item.id)} // Check if the item is selected
+                                    onChange={() => handleSelectItem(item.id)} // Handle individual row selection
+                                    disabled={!isBulkEditing} // Disable when bulk editing is not active
+                                  />
+                                </TableCell>
+                              )}
+
+                              <TableCell>
+                                <Link
+                                  style={{ textDecoration: "none" }}
+                                  to={`/manufacturer/products/details/${item.id}`}
+                                  state={{ searchQuery: searchTerm }}
+                                >
+                                  {item.logo &&
+                                    (item.logo.startsWith(
+                                      "http://example.com"
+                                    ) ? (
+                                      <img
+                                        src={soonImg} // Replace `soonImg` with the variable or URL for the placeholder image
+                                        alt="Placeholder Logo"
+                                        style={{
+                                          width: 30,
+                                          height: 30,
+                                          borderRadius: "50%",
+                                          objectFit: "cover",
+                                        }}
+                                      />
+                                    ) : item.logo.startsWith("http") ||
+                                      item.logo.startsWith("https") ? (
+                                      <img
+                                        src={item.logo}
+                                        alt="Product Logo"
+                                        style={{
+                                          width: 30,
+                                          height: 30,
+                                          borderRadius: "50%",
+                                          objectFit: "cover",
+                                        }}
+                                      />
+                                    ) : (
+                                      <img
+                                        src={soonImg} // Placeholder for invalid URLs
+                                        alt="Placeholder Logo"
+                                        style={{
+                                          width: 30,
+                                          height: 30,
+                                          borderRadius: "50%",
+                                          objectFit: "cover",
+                                        }}
+                                      />
+                                    ))}
+                                </Link>
+                              </TableCell>
+
+                              <TableCell>
+                                <Link
+                                  style={{
+                                    textDecoration: "none",
+                                    color: "inherit",
+                                  }}
+                                  to={`/manufacturer/products/details/${item.id}`}
+                                  state={{ searchQuery: searchTerm }}
+                                >
+                                  {item.sku_number_product_code_item_number}
+                                </Link>
+                              </TableCell>
+                              <TableCell>
+                                <Link
+                                  style={{
+                                    textDecoration: "none",
+                                    color: "inherit",
+                                  }}
+                                  to={`/manufacturer/products/details/${item.id}`}
+                                  state={{ searchQuery: searchTerm }}
+                                >
+                                  {item.mpn}
+                                </Link>
+                              </TableCell>
+
+                              <TableCell sx={{ width: "250px" }}>
+                                <Link
+                                  to={`/manufacturer/products/details/${item.id}`}
+                                  state={{ searchQuery: searchTerm }}
+                                  style={{
+                                    display: "inline-block",
+                                    textDecoration: "none",
+                                    color: "inherit",
+                                    maxWidth: "240px", // Optional: limit width for better control
+                                    overflowWrap: "break-word", // Allow wrapping of long words
+                                    wordWrap: "break-word", // For compatibility
+                                    fontSize: "12px",
+                                  }}
+                                >
+                                  {item.product_name}
+                                </Link>
+                              </TableCell>
+
+                              <TableCell>{item.brand_name}</TableCell>
+                              <TableCell>{item.end_level_category}</TableCell>
+                              <TableCell>
+                                <TableCell sx={{ border: "none" }}>
+                                  {item.availability ? (
+                                    <Tooltip title="In-stock">
+                                      <CheckCircleIcon
+                                        style={{ color: "green" }}
+                                      />
+                                    </Tooltip>
+                                  ) : (
+                                    <Tooltip title="Out of stock">
+                                      <CancelIcon style={{ color: "red" }} />
+                                    </Tooltip>
+                                  )}
+                                </TableCell>
+                              </TableCell>
+
+                              <TableCell>
+                                {isBulkEditing ? (
+                                  <input
+                                    style={{ width: "40px", fontSize: "10px" }}
+                                    type="number"
+                                    value={
+                                      editedValues[item.id]?.msrp ?? item.msrp
+                                    }
+                                    onChange={(e) =>
+                                      handleFieldChange(
+                                        item.id,
+                                        "msrp",
+                                        e.target.value
+                                      )
+                                    }
+                                    disabled={!selectedItems.has(item.id)} // Disable if the item is not selected
+                                  />
+                                ) : (
+                                  item.msrp
+                                )}
+                              </TableCell>
+
+                              <TableCell>
+                                {isBulkEditing ? (
+                                  <input
+                                    style={{
+                                      width: "40px",
+                                      fontSize: "10px",
+                                      color: errorMessage ? "red" : "inherit",
+                                    }}
+                                    type="number"
+                                    value={wasPrice}
+                                    onChange={(e) =>
+                                      handleFieldChange(
+                                        item.id,
+                                        "was_price",
+                                        e.target.value
+                                      )
+                                    }
+                                    disabled={!selectedItems.has(item.id)} // Disable if the item is not selected
+                                  />
+                                ) : (
+                                  item.was_price
+                                )}
+                              </TableCell>
+
+                              <TableCell>
+                                <Tooltip title={errorMessage || ""} arrow>
+                                  {isBulkEditing ? (
+                                    <input
+                                      style={{
+                                        width: "40px",
+                                        fontSize: "10px",
+                                        color: errorMessage ? "red" : "inherit",
+                                      }}
+                                      type="number"
+                                      value={price}
+                                      onChange={(e) =>
+                                        handleFieldChange(
+                                          item.id,
+                                          "price",
+                                          e.target.value
+                                        )
+                                      }
+                                      disabled={!selectedItems.has(item.id)} // Disable if the item is not selected
+                                    />
+                                  ) : (
+                                    item.price
+                                  )}
+                                </Tooltip>
+                              </TableCell>
+
+                              <TableCell
+                                onClick={() => handleToggleVisibility(item.id)}
+                              >
+                                {isBulkEditing ? (
+                                  <IconButton
+                                    disabled={!selectedItems.has(item.id)}
+                                  >
+                                    {editedVisibility[item.id] !== undefined ? (
+                                      editedVisibility[item.id] ? (
+                                        <Tooltip title="Hide it">
+                                          <Visibility
+                                            sx={{
+                                              fontSize: "18px",
+                                              color: "inherit", // Default color
+                                              "&:hover": {
+                                                color: "blue", // Change to blue on hover
+                                              },
+                                              cursor: "pointer", // Optional: Add a pointer cursor on hover
+                                            }}
+                                          />
+                                        </Tooltip>
+                                      ) : (
+                                        <Tooltip title="Visible it">
+                                          <VisibilityOff
+                                            sx={{
+                                              fontSize: "18px",
+                                              color: "inherit", // Default color
+                                              "&:hover": {
+                                                color: "blue", // Change to blue on hover
+                                              },
+                                              cursor: "pointer", // Optional: Add a pointer cursor on hover
+                                            }}
+                                          />
+                                        </Tooltip>
+                                      )
+                                    ) : item.visible ? (
+                                      <Tooltip title="Hide it">
+                                        <Visibility
+                                          sx={{
+                                            fontSize: "18px",
+                                            color: "inherit", // Default color
+                                            "&:hover": {
+                                              color: "blue", // Change to blue on hover
+                                            },
+                                            cursor: "pointer", // Optional: Add a pointer cursor on hover
+                                          }}
+                                        />
+                                      </Tooltip>
+                                    ) : (
+                                      <Tooltip title="Visible it">
+                                        <VisibilityOff
+                                          sx={{
+                                            fontSize: "18px",
+                                            color: "inherit", // Default color
+                                            "&:hover": {
+                                              color: "blue", // Change to blue on hover
+                                            },
+                                            cursor: "pointer", // Optional: Add a pointer cursor on hover
+                                          }}
+                                        />
+                                      </Tooltip>
+                                    )}
+                                  </IconButton>
+                                ) : item.visible ? (
                                   <Tooltip title="Hide it">
                                     <Visibility
                                       sx={{
@@ -1340,189 +1490,153 @@ function ProductList() {
                                       }}
                                     />
                                   </Tooltip>
-                                )
-                              ) : item.visible ? (
-                                <Tooltip title="Hide it">
-                                  <Visibility
-                                    sx={{
-                                      fontSize: "18px",
-                                      color: "inherit", // Default color
-                                      "&:hover": {
-                                        color: "blue", // Change to blue on hover
-                                      },
-                                      cursor: "pointer", // Optional: Add a pointer cursor on hover
-                                    }}
-                                  />
-                                </Tooltip>
-                              ) : (
-                                <Tooltip title="Visible it">
-                                  <VisibilityOff
-                                    sx={{
-                                      fontSize: "18px",
-                                      color: "inherit", // Default color
-                                      "&:hover": {
-                                        color: "blue", // Change to blue on hover
-                                      },
-                                      cursor: "pointer", // Optional: Add a pointer cursor on hover
-                                    }}
-                                  />
-                                </Tooltip>
-                              )}
-                            </IconButton>
-                          ) : item.visible ? (
-                            <Tooltip title="Hide it">
-                              <Visibility
-                                sx={{
-                                  fontSize: "18px",
-                                  color: "inherit", // Default color
-                                  "&:hover": {
-                                    color: "blue", // Change to blue on hover
-                                  },
-                                  cursor: "pointer", // Optional: Add a pointer cursor on hover
-                                }}
-                              />
-                            </Tooltip>
-                          ) : (
-                            <Tooltip title="Visible it">
-                              <VisibilityOff
-                                sx={{
-                                  fontSize: "18px",
-                                  color: "inherit", // Default color
-                                  "&:hover": {
-                                    color: "blue", // Change to blue on hover
-                                  },
-                                  cursor: "pointer", // Optional: Add a pointer cursor on hover
-                                }}
-                              />
-                            </Tooltip>
-                          )}
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })
+                                )}
+                              </TableCell>
+                            </TableRow>
+                          );
+                        })
+                    )}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+            </Box>
+            <TablePagination
+              rowsPerPageOptions={[10, 25, 50]}
+              component="div"
+              count={filteredItems.length} // Set the total number of rows based on filteredItems
+              rowsPerPage={rowsPerPage}
+              page={page}
+              onPageChange={handleChangePage} // Handle page change
+              onRowsPerPageChange={(event) => {
+                setRowsPerPage(parseInt(event.target.value, 10)); // Update rows per page
+                setPage(0); // Reset to first page when rows per page change
+              }}
+            />
+
+            <Menu
+              anchorEl={anchorEl}
+              open={Boolean(anchorEl)}
+              onClose={handleCloseMenu}
+            >
+              {/* Sorting for Price */}
+              {currentColumn === "price" && (
+                <>
+                  <MenuItem onClick={() => handleSelectSort("price", "asc")}>
+                    Sort Low to High
+                  </MenuItem>
+                  <MenuItem onClick={() => handleSelectSort("price", "desc")}>
+                    Sort High to Low
+                  </MenuItem>
+                </>
               )}
-            </TableBody>
-          </Table>
-        </TableContainer>
-      </Box>
-      <TablePagination
-        rowsPerPageOptions={[10, 25, 50]}
-        component="div"
-        count={filteredItems.length} // Set the total number of rows based on filteredItems
-        rowsPerPage={rowsPerPage}
-        page={page}
-        onPageChange={handleChangePage} // Handle page change
-        onRowsPerPageChange={(event) => {
-          setRowsPerPage(parseInt(event.target.value, 10)); // Update rows per page
-          setPage(0); // Reset to first page when rows per page change
-        }}
-      />
 
-      <Menu
-        anchorEl={anchorEl}
-        open={Boolean(anchorEl)}
-        onClose={handleCloseMenu}
-      >
-        {/* Sorting for Price */}
-        {currentColumn === "price" && (
-          <>
-            <MenuItem onClick={() => handleSelectSort("price", "asc")}>
-              Sort Low to High
-            </MenuItem>
-            <MenuItem onClick={() => handleSelectSort("price", "desc")}>
-              Sort High to Low
-            </MenuItem>
-          </>
-        )}
+              {/* Sorting for Availability */}
+              {currentColumn === "availability" && (
+                <>
+                  <MenuItem
+                    sx={{ fontSize: "12px" }}
+                    onClick={() => handleSelectAvailability("all")}
+                  >
+                    All
+                  </MenuItem>
+                  <MenuItem
+                    sx={{ fontSize: "12px" }}
+                    onClick={() => handleSelectAvailability("In-stock")}
+                  >
+                    In Stock
+                  </MenuItem>
+                  <MenuItem
+                    sx={{ fontSize: "12px" }}
+                    onClick={() => handleSelectAvailability("Out of stock")}
+                  >
+                    Out of Stock
+                  </MenuItem>
+                </>
+              )}
 
-        {/* Sorting for Availability */}
-        {currentColumn === "availability" && (
-          <>
-            <MenuItem
-              sx={{ fontSize: "12px" }}
-              onClick={() => handleSelectAvailability("all")}
-            >
-              All
-            </MenuItem>
-            <MenuItem
-              sx={{ fontSize: "12px" }}
-              onClick={() => handleSelectAvailability("In-stock")}
-            >
-              In Stock
-            </MenuItem>
-            <MenuItem
-              sx={{ fontSize: "12px" }}
-              onClick={() => handleSelectAvailability("Out of stock")}
-            >
-              Out of Stock
-            </MenuItem>
-          </>
-        )}
+              {/* Sorting for Brand */}
+              {currentColumn === "brand_name" && (
+                <>
+                  <MenuItem
+                    onClick={() => handleSelectSort("brand_name", "asc")}
+                  >
+                    Sort A-Z
+                  </MenuItem>
+                  <MenuItem
+                    onClick={() => handleSelectSort("brand_name", "desc")}
+                  >
+                    Sort Z-A
+                  </MenuItem>
+                </>
+              )}
 
-        {/* Sorting for Brand */}
-        {currentColumn === "brand_name" && (
-          <>
-            <MenuItem onClick={() => handleSelectSort("brand_name", "asc")}>
-              Sort A-Z
-            </MenuItem>
-            <MenuItem onClick={() => handleSelectSort("brand_name", "desc")}>
-              Sort Z-A
-            </MenuItem>
-          </>
-        )}
+              {currentColumn === "product_name" && (
+                <>
+                  <MenuItem
+                    onClick={() => handleSelectSort("product_name", "asc")}
+                  >
+                    Sort A-Z
+                  </MenuItem>
+                  <MenuItem
+                    onClick={() => handleSelectSort("product_name", "desc")}
+                  >
+                    Sort Z-A
+                  </MenuItem>
+                </>
+              )}
 
-        {currentColumn === "product_name" && (
-          <>
-            <MenuItem onClick={() => handleSelectSort("product_name", "asc")}>
-              Sort A-Z
-            </MenuItem>
-            <MenuItem onClick={() => handleSelectSort("product_name", "desc")}>
-              Sort Z-A
-            </MenuItem>
-          </>
-        )}
+              {currentColumn === "sku_number_product_code_item_number" && (
+                <>
+                  <MenuItem
+                    onClick={() =>
+                      handleSelectSort(
+                        "sku_number_product_code_item_number",
+                        "asc"
+                      )
+                    }
+                  >
+                    Sort A-Z
+                  </MenuItem>
+                  <MenuItem
+                    onClick={() =>
+                      handleSelectSort(
+                        "sku_number_product_code_item_number",
+                        "desc"
+                      )
+                    }
+                  >
+                    Sort Z-A
+                  </MenuItem>
+                </>
+              )}
 
-        {currentColumn === "sku_number_product_code_item_number" && (
-          <>
-            <MenuItem
-              onClick={() =>
-                handleSelectSort("sku_number_product_code_item_number", "asc")
-              }
-            >
-              Sort A-Z
-            </MenuItem>
-            <MenuItem
-              onClick={() =>
-                handleSelectSort("sku_number_product_code_item_number", "desc")
-              }
-            >
-              Sort Z-A
-            </MenuItem>
-          </>
-        )}
-
-        {currentColumn === "end_level_category" && (
-          <>
-            <MenuItem
-              onClick={() => handleSelectSort("end_level_category", "asc")}
-            >
-              Sort A-Z
-            </MenuItem>
-            <MenuItem
-              onClick={() => handleSelectSort("end_level_category", "desc")}
-            >
-              Sort Z-A
-            </MenuItem>
-          </>
-        )}
-      </Menu>
-      {isPopupOpen && <PopupModal onClose={() => setIsPopupOpen(false)} />}
-      <PopupModal open={isPopupOpen} onClose={handleClosePopup} />
+              {currentColumn === "end_level_category" && (
+                <>
+                  <MenuItem
+                    onClick={() =>
+                      handleSelectSort("end_level_category", "asc")
+                    }
+                  >
+                    Sort A-Z
+                  </MenuItem>
+                  <MenuItem
+                    onClick={() =>
+                      handleSelectSort("end_level_category", "desc")
+                    }
+                  >
+                    Sort Z-A
+                  </MenuItem>
+                </>
+              )}
+            </Menu>
+            {isPopupOpen && (
+              <PopupModal onClose={() => setIsPopupOpen(false)} />
+            )}
+            <PopupModal open={isPopupOpen} onClose={handleClosePopup} />
+          </div>
+        </Grid>
+      </Grid>
     </div>
-       </Grid>
-       </Grid>
-    </div>
-    
   );
 }
 

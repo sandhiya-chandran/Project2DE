@@ -27,6 +27,7 @@ import {
   DialogActions,
   Card,
   CardContent,
+  CircularProgress
 } from "@mui/material";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import DownloadIcon from "@mui/icons-material/Download";
@@ -143,9 +144,20 @@ const OrderDetail = () => {
   };
 
   // Return loading state if orderDetails is not yet available
-  if (loading) {
-    return <Typography variant="h6">Loading...</Typography>;
-  }
+    if (loading) {
+      return (
+        <Box
+          sx={{
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            height: "100vh",
+          }}
+        >
+          <CircularProgress />
+        </Box>
+      );
+    }
 
   return (
     <Box >

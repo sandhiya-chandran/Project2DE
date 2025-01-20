@@ -16,14 +16,15 @@ import {
 } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
 
-const ProductBrand = ({ industryId , onBrandChange , selectedCategoryId}) => {
+const ProductBrand = ({ industryId , onBrandChange , selectedCategoryId , selectedBrandsProp   }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [brands, setBrands] = useState([]);
   const [open, setOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedBrands, setSelectedBrands] = useState([]); 
+  const [selectedBrands, setSelectedBrands] = useState([]);
 
+  
 
   useEffect(() => {
     const fetchBrands = async () => {
@@ -71,12 +72,25 @@ const ProductBrand = ({ industryId , onBrandChange , selectedCategoryId}) => {
   const handleOpen = () => setOpen(true);
   const handleClose = () => setOpen(false);
 
+  
+  useEffect(() => {
+    if (selectedBrandsProp) {
+      // Sync selectedBrands state with selectedBrandsProp
+      const updatedSelectedBrands = brands.filter((brand) =>
+        selectedBrandsProp.includes(brand.id)
+      );
+      setSelectedBrands(updatedSelectedBrands);
+    }
+  }, [selectedBrandsProp, brands]);
+  
+
   const handleBrandSelection = (brandId) => {
-    const updatedBrands = selectedBrands.includes(brandId)
-      ? selectedBrands.filter((id) => id !== brandId)
-      : [...selectedBrands, brandId];
+    const selectedBrand = brands.find((brand) => brand.id === brandId);
+    const updatedBrands = selectedBrands.some((brand) => brand.id === brandId)
+      ? selectedBrands.filter((brand) => brand.id !== brandId)
+      : [...selectedBrands, { id: selectedBrand.id, name: selectedBrand.name }];
+
     setSelectedBrands(updatedBrands);
-    console.log("Selected Brands:", updatedBrands);
 
     if (onBrandChange) {
       onBrandChange({
@@ -134,8 +148,8 @@ const ProductBrand = ({ industryId , onBrandChange , selectedCategoryId}) => {
                   key={brand.id}
                   control={
                     <Checkbox
-                      checked={selectedBrands.includes(brand.id)}
-                      onChange={() => handleBrandSelection(brand.id)}
+                    checked={selectedBrands.some((selectedBrand) => selectedBrand.id === brand.id)}
+                    onChange={() => handleBrandSelection(brand.id)}
                     />
                   }
                   label={`${brand.name} (${brand.products_count || 0})`}
@@ -199,7 +213,7 @@ const ProductBrand = ({ industryId , onBrandChange , selectedCategoryId}) => {
                       <FormControlLabel
                         control={
                           <Checkbox
-                            checked={selectedBrands.includes(brand.id)}
+                          checked={selectedBrands.some((selectedBrand) => selectedBrand.id === brand.id)}
                             onChange={() => handleBrandSelection(brand.id)}
                           />
                         }

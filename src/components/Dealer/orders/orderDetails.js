@@ -19,7 +19,7 @@ import {
   ListItemText,
   Modal,
   IconButton,
-  Tooltip,  Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle 
+  Tooltip,  Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle , CircularProgress
 } from "@mui/material";
 import { useLocation } from "react-router-dom";
 import axios from "axios";
@@ -95,6 +95,7 @@ const OrderDetailPage = () => {
 
   const handleReorder = async () => {
     setIsReorderDialogOpen(false);
+    setLoading(true);
     try {
       const response = await axios.post(
         `${process.env.REACT_APP_IP}createReorder/`,
@@ -109,6 +110,8 @@ const OrderDetailPage = () => {
     } catch (error) {
       console.error("Reorder API error:", error);
       setIsReorderError(true);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -136,7 +139,18 @@ const OrderDetailPage = () => {
 
   // Return loading state if orderDetails is not yet available
   if (loading) {
-    return <Typography variant="h6">Loading...</Typography>;
+    return (
+      <Box
+        sx={{
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          height: "100vh",
+        }}
+      >
+        <CircularProgress />
+      </Box>
+    );
   }
 
   const {

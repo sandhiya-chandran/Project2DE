@@ -3,6 +3,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { useLocation } from "react-router-dom";
 import axios from "axios";
 import Tooltip from "@mui/material/Tooltip";
+import CloseIcon from "@mui/icons-material/Close";
 import {
   Card,
   CardMedia,
@@ -73,12 +74,36 @@ const ProductList = ({ fetchCartCount }) => {
   const userData = localStorage.getItem("user");
   const [debounceTimer, setDebounceTimer] = useState(null);
   const debounceTimerRef = useRef(null);
+  
 
-  const handleBrandChange = ({ updatedBrands }) => {
-    console.log("Updated selected brands PL:", updatedBrands);
-    // Update the selectedBrandIds state with the updated brand list (array)
-    setSelectedBrandIds(updatedBrands);
+  
+  const [selectedBrandNames, setSelectedBrandNames] = useState([]); // For Tags
+
+  const handleReload = () => {
+    window.location.reload(); // Reloads the current browser window
   };
+
+ // Handle brand selection changes from ProductBrand
+ const handleBrandChange = ({ updatedBrands }) => {
+  // Extract IDs and names from the updated list
+  const ids = updatedBrands.map((brand) => brand.id);
+  const names = updatedBrands.map((brand) => brand.name);
+
+  setSelectedBrandIds(ids); // Update IDs for API
+  setSelectedBrandNames(names); // Update names for tags
+};
+
+// Handle tag removal
+const handleTagRemove = (id) => {
+  // Update IDs and names based on the removed tag
+  const updatedIds = selectedBrandIds.filter((brandId) => brandId !== id);
+  const updatedNames = selectedBrandNames.filter(
+    (_, index) => selectedBrandIds[index] !== id
+  );
+
+  setSelectedBrandIds(updatedIds);
+  setSelectedBrandNames(updatedNames);
+};
 
   // Fetch Products
   useEffect(() => {
@@ -273,8 +298,9 @@ const ProductList = ({ fetchCartCount }) => {
       (item) => item.id === selectedIndustryId
     );
     setIndustry(selectedIndustry);
-    setSelectedCategoryId(null); 
-    setSelectedBrandIds(null);
+    setSelectedCategoryId(null);
+    setSelectedBrandIds([]); 
+      setSelectedBrandNames([]);
   };
 
   const handleChange = (event, newValue) => {
@@ -289,6 +315,8 @@ const ProductList = ({ fetchCartCount }) => {
 
       setSelectedCategoryId(categoryId); // Store the ID in state
       setCategory(selectedCategoryItem);
+      setSelectedBrandIds([]);
+      setSelectedBrandNames([]);
       console.log("Selected Category ID:", categoryId); // Log the ID to the console
     }
   };
@@ -533,22 +561,24 @@ const ProductList = ({ fetchCartCount }) => {
   return (
     <div>
       <Grid container spacing={1}>
-        <Grid item xs={12} md={1.5} >
-        <Box
-      sx={{
-        position: "sticky",
-        top: "56px", // Adjust this value based on the height of your header or top bar
-        height: "calc(100vh - 56px)", // Ensure it occupies the full height below the header
-        overflowY: "auto", // Allow scrolling inside if needed
-        boxShadow: "0px 0px 2px rgba(0, 0, 0, 0.1)", // Light shadow
-      }}
-    >
-      <ProductBrand
-        industryId={industry?.id}
-        onBrandChange={handleBrandChange}
-        selectedCategoryId={selectedCategoryId}
-      />
-    </Box>
+        <Grid item xs={12} md={1.5}>
+          <Box
+            sx={{
+              position: "sticky",
+              top: "56px", // Adjust this value based on the height of your header or top bar
+              height: "calc(100vh - 56px)", // Ensure it occupies the full height below the header
+              overflowY: "auto", // Allow scrolling inside if needed
+              boxShadow: "0px 0px 2px rgba(0, 0, 0, 0.1)", // Light shadow
+            }}
+          >
+            <ProductBrand
+              industryId={industry?.id}
+              onBrandChange={handleBrandChange}
+              selectedCategoryId={selectedCategoryId}
+              selectedBrandsProp={selectedBrandIds}
+            />
+
+          </Box>
         </Grid>
         <Grid item xs={12} md={10.5}>
           <Box>
@@ -561,7 +591,7 @@ const ProductList = ({ fetchCartCount }) => {
                 zIndex: 9,
               }}
             >
-              <Box sx={{ maxWidth: "85vw"}}>
+              <Box sx={{ maxWidth: "85vw" }}>
                 <Box
                   sx={{
                     display: "flex",
@@ -667,6 +697,20 @@ const ProductList = ({ fetchCartCount }) => {
                   gap={1}
                 >
                   <Button
+                    sx={{
+                      fontSize: "11px",
+                      fontWeight: 500,
+                      padding: "3px 10px",
+                      textTransform: "none",
+                      backgroundColor: "#d3d3d38c",
+                      borderRadius: "25px",
+                      color: "black",
+                    }}
+                    onClick={handleReload}
+                  >
+                    Clear filters
+                  </Button>
+                  <Button
                     onClick={() => handleSortChange(1)}
                     sx={{
                       fontSize: "11px",
@@ -696,6 +740,7 @@ const ProductList = ({ fetchCartCount }) => {
                   >
                     Price High to Low
                   </Button>
+                  
                 </Box>
 
                 <Box
@@ -748,13 +793,38 @@ const ProductList = ({ fetchCartCount }) => {
                   </Button>
                 </Box>
               </Box>
+
+              <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1 , margin: "10px"}}>
+        {selectedBrandNames.map((name, index) => (
+          <Box
+            key={selectedBrandIds[index]}
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              padding: "3px 9px",
+              backgroundColor: "#d3d3d38c",
+              borderRadius: "25px",
+            }}
+          >
+            <Typography sx={{ fontSize: "10px",
+                      fontWeight: 500,
+                      textTransform: "none",
+                    
+                      color: "black", }}>{name}</Typography>
+            <CloseIcon
+              sx={{ fontSize: "12px", cursor: "pointer" , marginLeft: "5px"}}
+              onClick={() => handleTagRemove(selectedBrandIds[index])}
+            />
+          </Box>
+        ))}
+               </Box>
             </Box>
             <Box
               display="flex"
               flexWrap="wrap"
               gap={3}
               justifyContent="flex-start"
-              sx={{ margin: "20px 10px" }}
+              sx={{ margin: "0px 10px" }}
             >
               {searchLoading ? (
                 // Show a loading spinner for search results while data is being fetched

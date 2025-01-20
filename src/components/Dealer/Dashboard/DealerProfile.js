@@ -15,10 +15,13 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
-  Tooltip,
+  Tooltip,FormControlLabel, Radio, RadioGroup
 } from "@mui/material";
 import { Edit, Delete, Home } from "@mui/icons-material";
 import { CameraAlt } from "@mui/icons-material";
+import { toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css'; // Import default styles
+import Close from '@mui/icons-material/Close';
 
 const DealerProfile = ({ userData, fetchUserDetails, setUserData }) => {
   const user = JSON.parse(localStorage.getItem("user"));
@@ -77,10 +80,19 @@ const DealerProfile = ({ userData, fetchUserDetails, setUserData }) => {
   };
 
   const handleSave = async () => {
+    // Check if at least one address is marked as default
+    const isDefaultAddressPresent = userData.address_obj_list.some(address => address.is_default);
+  
+    if (!isDefaultAddressPresent) {
+      // Show an error or toast message
+      toast.error("To Save add atleast one default address and fill all mandatory fields.");
+      return; // Stop the save if no default address is selected
+    }
+  
     if (!validateFields()) {
       return; // Stop saving if validation fails
     }
-
+  
     try {
       const filteredAddressList = userData.address_obj_list.map(
         ({
@@ -101,7 +113,7 @@ const DealerProfile = ({ userData, fetchUserDetails, setUserData }) => {
           id: address_id,
         })
       );
-
+  
       const response = await axios.post(
         `${process.env.REACT_APP_IP}updateUserProfile/`,
         {
@@ -120,18 +132,15 @@ const DealerProfile = ({ userData, fetchUserDetails, setUserData }) => {
           ware_house_obj_list: userData.ware_house_obj_list,
         }
       );
-
-      // console.log(response.data);
-
+  
       const fullName = `${userData.first_name} ${userData.last_name}`;
-
+  
       setIsEditable(false); // Disable editing after save
       fetchUserDetails();
     } catch (error) {
       console.error("Error updating user profile:", error);
     }
   };
-
   const handleChange = (e) => {
     const { name, value } = e.target;
     setUserData((prevState) => ({
@@ -154,40 +163,176 @@ const DealerProfile = ({ userData, fetchUserDetails, setUserData }) => {
     }
   };
 
-  const handleAddAddress = () => {
-    if (!newAddress.street || !newAddress.city || !newAddress.zipCode) {
-      alert("Please fill out all required fields.");
+  // handleRemove function (used when address_id is missing)
+const handleRemove = (index) => {
+  console.log("Removing address at index:", index);
+
+  setUserData((prevState) => {
+    const updatedAddressList = [...prevState.address_obj_list];
+
+    // Remove the address at the given index
+    updatedAddressList.splice(index, 1);
+
+    return { ...prevState, address_obj_list: updatedAddressList };
+  });
+};
+  const handleDelete = async (index, addressId, isDefault) => {
+    console.log("Deleting address ID:", addressId);
+  
+    // Prevent deletion if the address is marked as the default address
+    if (isDefault) {
+      console.error("Cannot delete default address.");
       return;
     }
+  
+    const userData = localStorage.getItem("user");
+    if (!userData) {
+      console.error("No user data found in localStorage.");
+      return;
+    }
+  
+    const userId = JSON.parse(userData).id;
+    const addressList = JSON.parse(userData).address_obj_list || [];
+  
+    // If addressId is available, use it; otherwise, fall back to the index-based approach
+    const addressToDelete = addressId || addressList[index]?.address_id;
+  
+    if (!addressToDelete) {
+      console.error("Address ID or index not found for deletion");
+      return;
+    }
+  
+    try {
+      const response = await axios.post(
+        `${process.env.REACT_APP_IP}deleteAddress/`,
+        {
+          address_id: addressToDelete,
+          user_id: userId,
+          is_default: isDefault,
+        }
+      );
+  
+      if (response.data.message === "success") {
+        console.log("Address deleted successfully");
+  
+        setUserData((prevState) => {
+          const updatedAddressList = [...prevState.address_obj_list];
+  
+          // Use addressId if available, otherwise delete by index
+          const deleteIndex = addressId
+            ? updatedAddressList.findIndex((address) => address.address_id === addressToDelete)
+            : index;
+  
+          // Proceed with deletion only if the address exists and is not the default
+          if (deleteIndex !== -1 && !updatedAddressList[deleteIndex].is_default) {
+            updatedAddressList.splice(deleteIndex, 1); // Splice removes the address at the found index
+          } else if (updatedAddressList[deleteIndex]?.is_default) {
+            console.error("Cannot delete default address.");
+            return prevState; // Return the same state without deletion
+          }
+  
+          // If the deleted address was the default one, set the first address as default
+          if (updatedAddressList.length > 0 && !updatedAddressList.some(address => address.is_default)) {
+            updatedAddressList[0].is_default = true; // Set the first address as default if none is marked
+          }
+  
+          return { ...prevState, address_obj_list: updatedAddressList };
+        });
+  
+        fetchUserDetails();
+      } else {
+        console.error("Failed to delete address:", response.data.message);
+      }
+    } catch (error) {
+      console.error("Error deleting address:", error);
+    }
+  };
+  
+
+  const handleDefaultChange = (index) => {
+    setUserData((prevState) => {
+      const updatedAddressList = prevState.address_obj_list.map((address, i) =>
+        i === index
+          ? { ...address, is_default: true } // Set selected address as default
+          : { ...address, is_default: false } // Unset others as default
+      );
+  
+      // If no address has is_default true, set the first address as default
+      if (!updatedAddressList.some(address => address.is_default)) {
+        updatedAddressList[0].is_default = true;
+      }
+  
+      return {
+        ...prevState,
+        address_obj_list: updatedAddressList,
+      };
+    });
+  };
+  
+  
+  const handleAddAddress = () => {
+
+    if (!newAddress.street || !newAddress.city || !newAddress.zipCode || !newAddress.country || !newAddress.state) {
+          alert("Please fill out all required fields.");
+          return;
+        }
 
     const newAddressWithDefault = {
       ...newAddress,
       id: Date.now().toString(),
-      is_default: userData.address_obj_list.some(
-        (address) => address.is_default
-      )
-        ? false // If a default exists, set new address as non-default
-        : true, // Otherwise, make it the default
+      is_default: false,  // Ensure default is set to false
     };
-
-    // Add the new address to the existing list without altering the `is_default` of existing addresses
+  
     setUserData((prevState) => ({
       ...prevState,
       address_obj_list: [...prevState.address_obj_list, newAddressWithDefault],
     }));
-
-    // Reset the new address form state
+  
+    // Reset newAddress form
     setNewAddress({
       street: "",
       city: "",
       state: "",
       zipCode: "",
       country: "",
-      is_default: false,
+      is_default: false,  // Ensure newAddress is also set to default false
     });
-
-    console.log("New address added:", newAddressWithDefault);
   };
+  
+  // const handleAddAddress = () => {
+  //   if (!newAddress.street || !newAddress.city || !newAddress.zipCode) {
+  //     alert("Please fill out all required fields.");
+  //     return;
+  //   }
+
+  //   const newAddressWithDefault = {
+  //     ...newAddress,
+  //     id: Date.now().toString(),
+  //     is_default: userData.address_obj_list.some(
+  //       (address) => address.is_default
+  //     )
+  //       ? false // If a default exists, set new address as non-default
+  //       : true, // Otherwise, make it the default
+  //   };
+
+  //   // Add the new address to the existing list without altering the `is_default` of existing addresses
+  //   setUserData((prevState) => ({
+  //     ...prevState,
+  //     address_obj_list: [...prevState.address_obj_list, newAddressWithDefault],
+  //   }));
+
+  //   // Reset the new address form state
+  //   setNewAddress({
+  //     street: "",
+  //     city: "",
+  //     state: "",
+  //     zipCode: "",
+  //     country: "",
+  //     is_default: false,
+  //   });
+
+  //   console.log("New address added:", newAddressWithDefault);
+  // };
 
   const handleClickOpen = () => {
     setOpen(true); // Open the modal
@@ -205,52 +350,52 @@ const DealerProfile = ({ userData, fetchUserDetails, setUserData }) => {
     }));
   };
 
-  const deleteAddress = async ({
-    address_id,
-    is_default,
-    user_id,
-    ware_house,
-  }) => {
-    try {
-      const response = await axios.post(
-        `${process.env.REACT_APP_IP}deleteAddress/`,
-        {
-          address_id,
-          is_default,
-          user_id,
-          ware_house,
-        }
-      );
-      return { success: true, data: response.data };
-    } catch (error) {
-      console.error("Error deleting address:", error);
-      return { success: false, message: error.message };
-    }
-  };
+  // const deleteAddress = async ({
+  //   address_id,
+  //   is_default,
+  //   user_id,
+  //   ware_house,
+  // }) => {
+  //   try {
+  //     const response = await axios.post(
+  //       `${process.env.REACT_APP_IP}deleteAddress/`,
+  //       {
+  //         address_id,
+  //         is_default,
+  //         user_id,
+  //         ware_house,
+  //       }
+  //     );
+  //     return { success: true, data: response.data };
+  //   } catch (error) {
+  //     console.error("Error deleting address:", error);
+  //     return { success: false, message: error.message };
+  //   }
+  // };
 
-  const handleDelete = async (addressId) => {
-    const result = await deleteAddress({
-      address_id: addressId,
-      is_default: true, // Adjust as needed
-      user_id: user.id,
-      ware_house: false,
-    });
+  // const handleDelete = async (addressId) => {
+  //   const result = await deleteAddress({
+  //     address_id: addressId,
+  //     is_default: true, // Adjust as needed
+  //     user_id: user.id,
+  //     ware_house: false,
+  //   });
 
-    if (result.success) {
-      // Directly update the userData state to remove the address
-      setUserData((prevData) => ({
-        ...prevData,
-        address_obj_list: prevData.address_obj_list.filter(
-          (address) => address.id !== addressId
-        ),
-      }));
+  //   if (result.success) {
+  //     // Directly update the userData state to remove the address
+  //     setUserData((prevData) => ({
+  //       ...prevData,
+  //       address_obj_list: prevData.address_obj_list.filter(
+  //         (address) => address.id !== addressId
+  //       ),
+  //     }));
 
-      // Optionally, fetch updated user data
-      fetchUserDetails();
-    } else {
-      alert(result.message);
-    }
-  };
+  //     // Optionally, fetch updated user data
+  //     fetchUserDetails();
+  //   } else {
+  //     alert(result.message);
+  //   }
+  // };
 
   // Conditionally render content based on userData
   if (!userData) {
@@ -349,82 +494,97 @@ const DealerProfile = ({ userData, fetchUserDetails, setUserData }) => {
         sx={{ display: "flex", justifyContent: "space-between", marginTop: 3 }}
       >
         <Grid container spacing={2}>
-          {/* Profile Information (Left side) */}
+           {/* Profile Information (Left side)  */}
           <Grid item xs={12} sm={6}>
             <Box>
               {userData && (
                 <form style={{ marginTop: 20 }}>
                   <Grid container spacing={2}>
-                    <Grid item xs={12}>
-                      <TextField
-                        label="First Name"
-                        name="first_name"
-                        value={userData.first_name}
-                        onChange={handleChange}
-                        fullWidth
-                        disabled={!isEditable}
-                        error={!!errors.first_name} // Highlight field in red if there's an error
-                        helperText={errors.first_name} // Show error message below the field
-                      />
-                    </Grid>
-                    <Grid item xs={12}>
-                      <TextField
-                        label="Last Name"
-                        name="last_name"
-                        value={userData.last_name || ""}
-                        onChange={handleChange}
-                        fullWidth
-                        disabled={!isEditable}
-                        error={!!errors.last_name} // Highlight field in red if there's an error
-                        helperText={errors.last_name} // Show error message below the field
-                      />
-                    </Grid>
-                    <Grid item xs={12}>
-                      <TextField
-                        label="Email"
-                        name="email"
-                        value={userData.email}
-                        onChange={handleChange}
-                        fullWidth
-                        disabled={!isEditable}
-                        error={!!errors.email}
-                        helperText={errors.email}
-                      />
-                    </Grid>
-                    <Grid item xs={12}>
-                      <TextField
-                        label="Mobile Number"
-                        name="mobile_number"
-                        value={userData.mobile_number}
-                        onChange={handleChange}
-                        fullWidth
-                        disabled={!isEditable}
-                        error={!!errors.mobile_number}
-                        helperText={errors.mobile_number}
-                      />
-                    </Grid>
-                    <Grid item xs={12}>
-                      <TextField
-                        label="Company Name"
-                        name="company_name"
-                        value={userData.company_name}
-                        onChange={handleChange}
-                        fullWidth
-                        disabled={!isEditable}
-                        error={!!errors.company_name}
-                        helperText={errors.company_name}
-                      />
-                    </Grid>
-                    <Grid item xs={12}>
-                      <TextField
-                        label="Website"
-                        name="website"
-                        value={userData.website}
-                        onChange={handleChange}
-                        fullWidth
-                        disabled={!isEditable}
-                      />
-                    </Grid>
+                    {(isEditable || userData.first_name) && (
+                      <Grid item xs={12}>
+                        <TextField
+                          label="First Name"
+                          name="first_name"
+                          value={userData.first_name}
+                          onChange={handleChange}
+                          fullWidth
+                          disabled={!isEditable}
+                          error={!!errors.first_name} // Highlight field in red if there's an error
+                          helperText={errors.first_name} // Show error message below the field
+                          required
+                        />
+                      </Grid>
+                    )}
+                    {(isEditable || userData.last_name) && (
+                      <Grid item xs={12}>
+                        <TextField
+                          label="Last Name"
+                          name="last_name"
+                          value={userData.last_name || ""}
+                          onChange={handleChange}
+                          fullWidth
+                          disabled={!isEditable}
+                          error={!!errors.last_name} // Highlight field in red if there's an error
+                          helperText={errors.last_name} // Show error message below the field
+                          required
+                        />
+                      </Grid>
+                    )}
+                    {(isEditable || userData.email) && (
+                      <Grid item xs={12}>
+                        <TextField
+                          label="Email"
+                          name="email"
+                          value={userData.email}
+                          onChange={handleChange}
+                          fullWidth
+                          disabled={!isEditable}
+                          error={!!errors.email}
+                          helperText={errors.email}
+                          required
+                        />
+                      </Grid>
+                    )}
+                    {(isEditable || userData.mobile_number) && (
+                      <Grid item xs={12}>
+                        <TextField
+                          label="Mobile Number"
+                          name="mobile_number"
+                          value={userData.mobile_number}
+                          onChange={handleChange}
+                          fullWidth
+                          disabled={!isEditable}
+                          error={!!errors.mobile_number}
+                          helperText={errors.mobile_number}
+                        />
+                      </Grid>
+                    )}
+                    {(isEditable || userData.company_name) && (
+                      <Grid item xs={12}>
+                        <TextField
+                          label="Company Name"
+                          name="company_name"
+                          value={userData.company_name}
+                          onChange={handleChange}
+                          fullWidth
+                          disabled={!isEditable}
+                          error={!!errors.company_name}
+                          helperText={errors.company_name}
+                        />
+                      </Grid>
+                    )}
+                    {(isEditable || userData.website) && (
+                      <Grid item xs={12}>
+                        <TextField
+                          label="Website"
+                          name="website"
+                          value={userData.website}
+                          onChange={handleChange}
+                          fullWidth
+                          disabled={!isEditable}
+                        />
+                      </Grid>
+                    )}
                   </Grid>
                 </form>
               )}
@@ -433,49 +593,68 @@ const DealerProfile = ({ userData, fetchUserDetails, setUserData }) => {
 
           {/* Address Information (Right side) */}
           <Grid item xs={12} sm={6}>
-            <Box>
-              <div>
-                {userData?.address_obj_list &&
-                userData.address_obj_list.length > 0 ? (
-                  <div style={{ marginTop: 20 }}>
-                    {userData.address_obj_list.map((address) => (
-                      <Card key={address.id} style={{ marginBottom: 10 }}>
-                        <CardContent style={{ padding: "6px 10px" }}>
-                          <Typography variant="body2">
-                            {address.street}, {address.city}, {address.state},{" "}
-                            {address.zipCode}, {address.country}
-                          </Typography>
-                          <Box
-                            sx={{
-                              display: "flex",
-                              justifyContent: "flex-end",
-                              marginTop: "10px",
-                            }}
-                          >
-                            <IconButton
-                              color="error"
-                              disabled={!isEditable}
-                              onClick={() => handleDelete(address.address_id)}
-                            >
-                              <Delete />
-                            </IconButton>
-                          </Box>
-                        </CardContent>
-                      </Card>
-                    ))}
-                  </div>
-                ) : (
-                  <Typography
-                    variant="body1"
-                    color="textSecondary"
-                    align="center"
-                    sx={{ margin: "50px 0px" }}
-                  >
-                    No addresses found. Please add a new address.
-                  </Typography>
-                )}
-              </div>
-            </Box>
+          <Box>
+          <div>
+  {userData?.address_obj_list && userData.address_obj_list.length > 0 ? (
+    <div style={{ marginTop: 20 }}>
+      {userData.address_obj_list.map((address, index) => {
+        console.log("9090", address.address_id); // Correct placement of console.log
+        return (
+          <Card key={address.address_id || index} style={{ marginBottom: 10 }}>
+            <CardContent style={{ padding: "6px 10px" }}>
+              <Typography variant="body2">
+                {address.street}, {address.city}, {address.state}, {address.zipCode},{" "}
+                {address.country}
+              </Typography>
+              <Box
+                sx={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  marginTop: "10px",
+                }}
+              >
+                <RadioGroup
+                  row
+                  value={address.is_default ? address.address_id : ""} // Ensure this reflects the default address
+                  onChange={() => handleDefaultChange(index)} // This will trigger handleDefaultChange to update is_default
+                >
+                  <FormControlLabel
+                    value={address.address_id}
+                    control={<Radio />}
+                    label="Default"
+                  />
+                </RadioGroup>
+
+                {/* Display Close icon if address_id is missing */}
+                <IconButton
+                  color="error"
+                  onClick={() => handleDelete(index, address.address_id, address.is_default)}
+                >
+                  {address.address_id ? (
+                    <Delete />
+                  ) : (
+                    <IconButton   onClick={() => handleRemove(index)}>
+                    <Close />
+                    </IconButton>
+                  )}
+                </IconButton>
+              </Box>
+            </CardContent>
+          </Card>
+        );
+      })}
+    </div>
+  ) : (
+    <Box textAlign={"center"} style={{ marginTop: 20 }}>
+      <Typography variant="h6">Please Add atleast one default address</Typography>
+    </Box>
+  )}
+</div>
+
+
+</Box>
+
           </Grid>
         </Grid>
       </Box>
@@ -497,6 +676,7 @@ const DealerProfile = ({ userData, fetchUserDetails, setUserData }) => {
                     onChange={handleAddressChange}
                     fullWidth
                     disabled={!isEditable}
+                    required
                   />
                 </Grid>
                 <Grid item xs={12} sm={6}>
@@ -507,6 +687,7 @@ const DealerProfile = ({ userData, fetchUserDetails, setUserData }) => {
                     onChange={handleAddressChange}
                     fullWidth
                     disabled={!isEditable}
+                    required
                   />
                 </Grid>
                 <Grid item xs={12} sm={6}>
@@ -527,6 +708,7 @@ const DealerProfile = ({ userData, fetchUserDetails, setUserData }) => {
                     onChange={handleAddressChange}
                     fullWidth
                     disabled={!isEditable}
+                    required
                   />
                 </Grid>
                 <Grid item xs={12} sm={6}>
@@ -537,6 +719,7 @@ const DealerProfile = ({ userData, fetchUserDetails, setUserData }) => {
                     onChange={handleAddressChange}
                     fullWidth
                     disabled={!isEditable}
+                    required
                   />
                 </Grid>
               </Grid>

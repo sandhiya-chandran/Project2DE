@@ -45,32 +45,32 @@ const Sidebar = ({ isOpen , toggleSidebar }) => {
                 </ListItem>
                 
         <ListItem disablePadding>
-          <ListItemButton component={Link} to="/manufacturer" sx={getActiveStyle('/manufacturer')}>
+          <ListItemButton component={Link} to="/manufacturer" sx={getActiveStyle('/manufacturer')} onClick={toggleSidebar}>
             <Dashboard sx={{ mr: 1 }} /> {/* Dashboard Icon */}
             <ListItemText primary="Dashboard" />
           </ListItemButton>
         </ListItem>
       
         <ListItem disablePadding>
-          <ListItemButton component={Link} to="/manufacturer/products" sx={getActiveStyle('/manufacturer/products')}>
+          <ListItemButton component={Link} to="/manufacturer/products" sx={getActiveStyle('/manufacturer/products')} onClick={toggleSidebar}>
             <ShoppingCart sx={{ mr: 1 }} /> {/* Products Icon */}
             <ListItemText primary="Products" />
           </ListItemButton>
         </ListItem>
         <ListItem disablePadding>
-          <ListItemButton component={Link} to="/manufacturer/orders" sx={getActiveStyle('/manufacturer/orders')}>
+          <ListItemButton component={Link} to="/manufacturer/orders" sx={getActiveStyle('/manufacturer/orders')} onClick={toggleSidebar}>
             <Receipt sx={{ mr: 1 }} /> {/* Orders Icon */}
             <ListItemText primary="Orders" />
           </ListItemButton>
         </ListItem>
         <ListItem disablePadding>
-          <ListItemButton component={Link} to="/manufacturer/dealerList" sx={getActiveStyle('/manufacturer/dealerList')}>
+          <ListItemButton component={Link} to="/manufacturer/dealerList" sx={getActiveStyle('/manufacturer/dealerList')} onClick={toggleSidebar}>
             <People sx={{ mr: 1 }} /> {/* Dealers Icon */}
             <ListItemText primary="Buyers" />
           </ListItemButton>
         </ListItem>
         <ListItem disablePadding>
-          <ListItemButton component={Link} to="/manufacturer/settings" sx={getActiveStyle('/manufacturer/settings')}>
+          <ListItemButton component={Link} to="/manufacturer/settings" sx={getActiveStyle('/manufacturer/settings')} onClick={toggleSidebar}>
             <Settings sx={{ mr: 1 }} /> {/* Settings Icon */}
             <ListItemText primary="Settings" />
           </ListItemButton>

@@ -16,16 +16,21 @@ import {
 } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
 
-const ProductBrand = ({ industryId , onBrandChange , selectedCategoryId}) => {
+const ProductBrand = ({ industryId , onBrandChange , selectedCategoryId , isParent , selectedBrand= [],}) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [brands, setBrands] = useState([]);
   const [open, setOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedBrands, setSelectedBrands] = useState([]); 
+  const [selectedBrands, setSelectedBrands] = useState(selectedBrand);  // Initialize with selectedBrand prop
+
+  useEffect(() => {
+    setSelectedBrands(selectedBrand);  // Update selectedBrands whenever selectedBrand prop changes
+  }, [selectedBrand]);
 
 
   useEffect(() => {
+    console.log("isParent value:", isParent);
     const fetchBrands = async () => {
       setLoading(true);
       setError(null);
@@ -42,7 +47,7 @@ const ProductBrand = ({ industryId , onBrandChange , selectedCategoryId}) => {
         }
 
         const response = await axios.get(
-          `${process.env.REACT_APP_IP}obtainbrandList/?manufacture_unit_id=${manufactureUnitId}&role_name=${role_name}&industry_id=${industryId || ""}&product_category_id=${selectedCategoryId || ""}&filters=all`
+          `${process.env.REACT_APP_IP}obtainbrandList/?manufacture_unit_id=${manufactureUnitId}&role_name=${role_name}&industry_id=${industryId || ""}&product_category_id=${selectedCategoryId || ""}&is_parent=${isParent || ""}&filters=all`
         );
 
         const responseData = response.data?.data || [];

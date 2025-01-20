@@ -96,19 +96,7 @@ const OrderList = () => {
     navigate(`/manufacturer/order-details/${orderId}`); // Navigate to the OrderDetail page with orderId
   };
 
-  useEffect(() => {
-        // Get the query parameters from the URL
-        const searchParams = new URLSearchParams(location.search);
-        const filter = searchParams.get('filter');
-    
-        // Set the filter state based on the query parameter in the URL
-        if (filter === 'Pending') {
-          setPaymentStatus('Pending');
-        } else if (filter === 'yes') {
-          setis_reorder('Yes');
-        }
-      }, [location.search]); // Trigger effect whenever the URL changes
-    
+ 
 
   const filteredOrders = orders.filter((order) => {
     // Ensure searchTerm is normalized
@@ -238,9 +226,22 @@ const OrderList = () => {
     setAnchorEl(null); // Close the menu
   };
 
+
   useEffect(() => {
+
+    const searchParams = new URLSearchParams(location.search);
+    const filter = searchParams.get('filter');
+
+    // Set the filter state based on the query parameter in the URL
+    if (filter === 'Pending') {
+      setPaymentStatus('Pending');
+    } else if (filter === 'yes') {
+      setis_reorder('Yes');
+    }
+    
     fetchOrders(); // This will be called after the filter states are updated
   }, [
+    location.search,
     user.manufacture_unit_id,
     searchTerm,
     sortConfig,
@@ -836,13 +837,13 @@ const OrderList = () => {
           }}
         >
           {/* Apply Button */}
-          <Button
+          {/* <Button
             sx={{ fontSize: "12px" }}
             variant="contained"
             onClick={handleApplyDealers}
           >
             Apply
-          </Button>
+          </Button> */}
 
           {/* Clear Button */}
           <Button

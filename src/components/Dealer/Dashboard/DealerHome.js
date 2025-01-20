@@ -233,12 +233,16 @@ const DashboardHome = () => {
           </TableCell>
           <TableCell>{product.sku_number}</TableCell>
           <TableCell>
-        <img
-          src={product.brand_logo}
-          alt={product.brand_name}
-          width="15"
-        />
-          </TableCell>
+  {product.brand_logo && product.brand_logo.startsWith("http") ? (
+    <img
+      src={product.brand_logo}
+      alt={product.brand_name}
+      width="15"
+    />
+  ) : (
+    product.brand_name
+  )}
+</TableCell>
           <TableCell>{product.category_name}</TableCell>
           <TableCell>
         {new Date(product.last_updated).toLocaleDateString()}
