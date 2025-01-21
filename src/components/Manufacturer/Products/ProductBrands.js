@@ -16,18 +16,14 @@ import {
 } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
 
-const ProductBrand = ({ industryId , onBrandChange , selectedCategoryId , isParent , selectedBrand= [],}) => {
+const ProductBrand = ({ industryId , onBrandChange , selectedCategoryId , isParent , selectedBrandsProp }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [brands, setBrands] = useState([]);
   const [open, setOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedBrands, setSelectedBrands] = useState(selectedBrand);  // Initialize with selectedBrand prop
-
-  useEffect(() => {
-    setSelectedBrands(selectedBrand);  // Update selectedBrands whenever selectedBrand prop changes
-  }, [selectedBrand]);
-
+  const [selectedBrands, setSelectedBrands] = useState([]);
+  
 
   useEffect(() => {
     console.log("isParent value:", isParent);
@@ -76,19 +72,31 @@ const ProductBrand = ({ industryId , onBrandChange , selectedCategoryId , isPare
   const handleOpen = () => setOpen(true);
   const handleClose = () => setOpen(false);
 
-  const handleBrandSelection = (brandId) => {
-    const updatedBrands = selectedBrands.includes(brandId)
-      ? selectedBrands.filter((id) => id !== brandId)
-      : [...selectedBrands, brandId];
-    setSelectedBrands(updatedBrands);
-    console.log("Selected Brands:", updatedBrands);
+  useEffect(() => {
+      if (selectedBrandsProp) {
+        // Sync selectedBrands state with selectedBrandsProp
+        const updatedSelectedBrands = brands.filter((brand) =>
+          selectedBrandsProp.includes(brand.id)
+        );
+        setSelectedBrands(updatedSelectedBrands);
+      }
+    }, [selectedBrandsProp, brands]);
+    
 
-    if (onBrandChange) {
-      onBrandChange({
-        updatedBrands,
-      });
-    }
-  };
+    const handleBrandSelection = (brandId) => {
+      const selectedBrand = brands.find((brand) => brand.id === brandId);
+      const updatedBrands = selectedBrands.some((brand) => brand.id === brandId)
+        ? selectedBrands.filter((brand) => brand.id !== brandId)
+        : [...selectedBrands, { id: selectedBrand.id, name: selectedBrand.name }];
+  
+      setSelectedBrands(updatedBrands);
+  
+      if (onBrandChange) {
+        onBrandChange({
+          updatedBrands,
+        });
+      }
+    };
   
 
   
@@ -139,9 +147,8 @@ const ProductBrand = ({ industryId , onBrandChange , selectedCategoryId , isPare
                   key={brand.id}
                   control={
                     <Checkbox
-                      checked={selectedBrands.includes(brand.id)}
-                      onChange={() => handleBrandSelection(brand.id)}
-                    />
+                    checked={selectedBrands.some((selectedBrand) => selectedBrand.id === brand.id)}
+                      onChange={() => handleBrandSelection(brand.id)} />
                   }
                   label={`${brand.name} (${brand.products_count || 0})`}
                   sx={{ "& .MuiTypography-root": { fontSize: "14px" } }}
@@ -204,7 +211,7 @@ const ProductBrand = ({ industryId , onBrandChange , selectedCategoryId , isPare
                       <FormControlLabel
                         control={
                           <Checkbox
-                            checked={selectedBrands.includes(brand.id)}
+                          checked={selectedBrands.some((selectedBrand) => selectedBrand.id === brand.id)}
                             onChange={() => handleBrandSelection(brand.id)}
                           />
                         }

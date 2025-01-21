@@ -6,6 +6,11 @@ import { useNavigate } from "react-router-dom";
 import ClearIcon from "@mui/icons-material/Clear";
 import SearchIcon from "@mui/icons-material/Search";
 import MoreVertIcon from "@mui/icons-material/MoreVert";
+import { DemoContainer } from "@mui/x-date-pickers/internals/demo";
+import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
+import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
+import { DatePicker } from "@mui/x-date-pickers/DatePicker";
+
 const OrderList = () => {
   const user = JSON.parse(localStorage.getItem("user"));
   const [orders, setOrders] = useState([]);
@@ -17,6 +22,7 @@ const OrderList = () => {
   const [fulfilled_status, setFulfilledStatus] = useState("all");
   const [payment_status, setPaymentStatus] = useState("all");
   const [is_reorder, setis_reorder] = useState("all");
+  const [selectedDate, setSelectedDate] = useState(null);
   const [page, setPage] = useState(0);
   const navigate = useNavigate();
   const location = useLocation();
@@ -39,7 +45,11 @@ const OrderList = () => {
   const fetchOrderList = async (key, direction) => {
     console.log('pass',key, direction)
     try {
+      
+      const formattedDate = selectedDate ? selectedDate.format("YYYY-MM-DD") : null;
+  
       const sort_by_value = direction === 'asc' ? 1 : direction === 'desc' ? -1 : '';
+
       const response = await axios.post(
         `${process.env.REACT_APP_IP}obtainOrderListForDealer/`,
         {
@@ -52,6 +62,7 @@ const OrderList = () => {
           fulfilled_status, // Use state directly
           payment_status,
           is_reorder,   // Use state directly
+          search_by_date: formattedDate,
       
         }
       );
@@ -69,17 +80,16 @@ const OrderList = () => {
   
 
   useEffect(() => {
-    fetchOrderList(); // This will be called after the filter states are updated
+    fetchOrderList(sortConfig.key, sortConfig.direction); 
   }, [
     user?.id,
     sortConfig,
     page,
-
     delivery_status,
     fulfilled_status,
     payment_status,
     is_reorder,
-  
+    selectedDate
   ]);
 
 
@@ -166,6 +176,56 @@ const OrderList = () => {
          top:'55px',
          zIndex:9,
       }}> 
+
+       <LocalizationProvider dateAdapter={AdapterDayjs}>
+                  <DemoContainer components={["DatePicker"]}>
+                    <DatePicker
+                      value={selectedDate}
+                      onChange={(newDate) => {
+                        console.log("Selected Date after change:", newDate);
+                        setSelectedDate(newDate);
+                      }}
+                      renderInput={(params) => (
+                        <TextField
+                          {...params}
+                          size="small"
+                          sx={{
+                            width: 200,
+                            fontSize: "0.875rem",
+                            height: 40,
+                            "& .MuiInputBase-root": {
+                              height: 40,
+                            },
+                            "& .MuiOutlinedInput-root": {
+                              padding: "0 14px", // Adjust this padding as needed
+                            },
+                            "& .MuiInputBase-input": {
+                              padding: "0px", // Remove padding from the input itself
+                            },
+                          }}
+                          componentsProps={{
+                            actionBar: {
+                              sx: {
+                                fontSize: "1rem", // Adjust calendar icon size here
+                              },
+                            },
+                          }}
+                        />
+                      )}
+                    />
+                  </DemoContainer>
+      
+                  {/* Button to manually trigger fetchOrders */}
+                  {/* <Button
+                    sx={{ fontSize: "14px" }}
+                    variant="contained"
+                    color="primary"
+                    onClick={fetchOrders}
+                  >
+                    Fetch Orders
+                  </Button> */}
+                </LocalizationProvider>
+                
          <TextField
           placeholder="Search Orders"
           sx={{

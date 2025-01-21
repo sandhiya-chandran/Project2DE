@@ -25,7 +25,10 @@ import {
   Tooltip,
   Menu,
   Grid,
+  Typography,
 } from "@mui/material";
+import CloseIcon from "@mui/icons-material/Close";
+
 import {
   Visibility,
   VisibilityOff,
@@ -79,14 +82,13 @@ function ProductList() {
   const [selectedParent, setSelectedParent] = useState(""); // Selected parent category ID
   const [childCategories, setChildCategories] = useState([]); // Child categories
   const [selectedChild, setSelectedChild] = useState(""); // Selected child category ID
+  const [selectedBrandNames, setSelectedBrandNames] = useState([]); // For Tags
 
   const userData = localStorage.getItem("user");
 
-  
   const handleReload = () => {
     window.location.reload(); // Reloads the current browser window
   };
-
 
   const handleClearAll = () => {
     setSelectedBrandIds([]);
@@ -140,44 +142,44 @@ function ProductList() {
     filters = "all",
     selectedCategory = null,
     industry = null,
-    key,
-    direction
   ) => {
     console.log("Selected Brand IDs inside fetchData:", selectedBrandIds);
     const industryId = industry?.id || "";
     const categoryId = selectedCategory?.id || ""; // Use selectedCategory.id safely
     const isParent = selectedCategory?.is_parent || false; // Ensure is_parent is handled
-
+  
     setLoading(true);
     setError("");
-
+  
     try {
       const userData = localStorage.getItem("user");
       let manufactureUnitId = "";
-
+  
       if (userData) {
         const data = JSON.parse(userData);
         manufactureUnitId = data.manufacture_unit_id;
       }
-
-      const sort_by_value =
-        direction === "asc" ? 1 : direction === "desc" ? -1 : "";
-      const payload = {
+  
+       const payload = {
         manufacture_unit_id: manufactureUnitId,
         product_category_id: categoryId,
         industry_id: industryId,
         filters: filters,
-        sort_by: key || "",
-        sort_by_value: sort_by_value,
+        sort_by: sortConfig.key,
+        sort_by_value: sortConfig.direction === "asc" ? 1 : -1,
         is_parent: isParent, // Correctly set is_parent
         brand_id_list: selectedBrandIds,
       };
-
+  
+      console.log("Payload being sent to server:", payload);
+  
       const response = await axios.post(
         `${process.env.REACT_APP_IP}obtainProductsList/`,
         payload
       );
-
+  
+      console.log("Response from server:", response);
+  
       const products = response.data.data || [];
       setItems(products); // Update default product list
       setFilteredItems(products); // Initialize filtered items
@@ -194,21 +196,35 @@ function ProductList() {
       filters,
       selectedCategory,
       industry,
-      sortConfig.key,
-      sortConfig.direction
     );
   }, [
     filters,
     selectedCategory,
     industry,
-    sortConfig.key,
-    sortConfig.direction,
+    sortConfig,
     selectedBrandIds,
   ]);
 
+  // Handle brand selection changes from ProductBrand
   const handleBrandChange = ({ updatedBrands }) => {
-    console.log("Updated selected brands PL:", updatedBrands);
-    setSelectedBrandIds(updatedBrands);
+    // Extract IDs and names from the updated list
+    const ids = updatedBrands.map((brand) => brand.id);
+    const names = updatedBrands.map((brand) => brand.name);
+
+    setSelectedBrandIds(ids); // Update IDs for API
+    setSelectedBrandNames(names); // Update names for tags
+  };
+
+  // Handle tag removal
+  const handleTagRemove = (id) => {
+    // Update IDs and names based on the removed tag
+    const updatedIds = selectedBrandIds.filter((brandId) => brandId !== id);
+    const updatedNames = selectedBrandNames.filter(
+      (_, index) => selectedBrandIds[index] !== id
+    );
+
+    setSelectedBrandIds(updatedIds);
+    setSelectedBrandNames(updatedNames);
   };
 
   // Fetch industries on component mount
@@ -247,6 +263,8 @@ function ProductList() {
     setSelectedCategory(null);
     setSelectedParent("");
     setSelectedChild("");
+    setSelectedBrandIds([]);
+    setSelectedBrandNames([]);
   };
 
   const getValidationMessage = (wasPrice, price) => {
@@ -292,6 +310,8 @@ function ProductList() {
         );
 
         setCategories(parentCategories);
+        setSelectedBrandIds([]);
+        setSelectedBrandNames([]);
 
         // Fetch initial product list for all categories
         await fetchData();
@@ -322,6 +342,8 @@ function ProductList() {
           `${process.env.REACT_APP_IP}obtainProductCategoryList/?manufacture_unit_id=${manufactureUnitId}&product_category_id=${selectedParent}&is_parent=true`
         );
         setChildCategories(response.data.data || []);
+        setSelectedBrandIds([]);
+        setSelectedBrandNames([]);
       } catch (error) {
         console.error("Error fetching child categories:", error);
       }
@@ -573,11 +595,14 @@ function ProductList() {
   };
 
   const handleSelectSort = (key, direction) => {
+    console.log('army',key, direction)
     setSortConfig({ key, direction });
-    setPage(0); // Reset page to 0 when sorting is applied
-    fetchData("", "", key, direction);
-    setAnchorEl(null); // Close the menu after selection
+    setPage(0);  // Reset page to 0 when sorting is applied
+    // fetchData( key, direction);
+    setAnchorEl(null);  // Close the menu after selection
   };
+
+  
 
   const handleSelectAvailability = (status) => {
     setFilters(status); // Set the filter to show the selected availability status
@@ -585,7 +610,7 @@ function ProductList() {
     setAnchorEl(null); // Close the menu after selection
   };
 
-  const handleBulkEditSubmit = async () => {
+  const handleBulkEditSubmit = async (key, direction) => {
     try {
       // Check if any price exceeds the was_price
       const hasError = Array.from(selectedItems).some((id) => {
@@ -642,13 +667,19 @@ function ProductList() {
               ? Number(editedFields.msrp)
               : Number(originalItem.msrp ?? 0); // Default msrp to 0 if missing
 
+              // Determine visibility based on direction
+            const visibility = direction === "asc" ? true : direction === "desc" ? false : "";
+            console.log('Visibility', visibility);
+    
+            updatedItem.visible = visibility ? visibility : originalItem.visible; // Use the original value if not updated
+
           // Include visibility status only if edited
-          if (
-            editedVisibility[id] !== undefined &&
-            editedVisibility[id] !== originalItem.visible
-          ) {
-            updatedItem.visible = editedVisibility[id];
-          }
+          // if (
+          //   editedVisibility[id] !== undefined &&
+          //   editedVisibility[id] !== originalItem.visible
+          // ) {
+          //   updatedItem.visible = editedVisibility[id];
+          // }
 
           // Include only updated fields (skip if identical to the original values)
           return Object.keys(updatedItem).length > 1 ? updatedItem : null;
@@ -748,6 +779,42 @@ function ProductList() {
     setDiscountUnit(e.target.value); // Update discount unit when dropdown value changes
   };
 
+
+  const handleSelectVisible = (key, direction) => {
+    console.log('Selected Items:', selectedItems, items);
+  
+    // Create a new array to avoid mutating the state directly
+    const updatedItems = items.map((item) => {
+      if (selectedItems.has(item.id)) { // Only affect selected items
+        // Hide or unhide based on direction
+        if (direction === "visibleOff" && item.visible) {
+          return { ...item, visible: false }; // Hide item, but keep it in the list
+        }
+        if (direction === "visibleOn" && !item.visible) {
+          return { ...item, visible: true }; // Unhide item, but keep it in the list
+        }
+      }
+      return item; // Keep item unchanged if it's not selected
+    });
+  
+    // Update the items state immediately (keep all items in the list)
+    setItems(updatedItems);
+  
+    // Now update the visibility icon state (editedVisibility)
+    const updatedVisibility = { ...editedVisibility };
+    selectedItems.forEach(id => {
+      updatedVisibility[id] = direction === "visibleOff" ? false : true;
+    });
+  
+    setEditedVisibility(updatedVisibility);
+  
+    // Optionally, reset the sorting configuration and close the menu after selection
+    setSortConfig({ key, direction });
+    setPage(0); // Reset page to 0 when sorting is applied
+    setAnchorEl(null); // Close the menu after selection
+  };
+  
+
   if (error) return <div>{error}</div>;
 
   return (
@@ -765,10 +832,10 @@ function ProductList() {
           >
             <ProductBrand
               industryId={industry?.id}
+              onBrandChange={handleBrandChange}
               selectedCategoryId={selectedCategory?.id} // Pass selected category ID
               isParent={selectedCategory?.is_parent || false} // Pass isParent based on selectedCategory
-              onBrandChange={handleBrandChange}
-              selectedBrand={selectedBrandIds}
+              selectedBrandsProp={selectedBrandIds}
             />
           </Box>
         </Grid>
@@ -966,56 +1033,7 @@ function ProductList() {
                     <MenuItem value="$">$</MenuItem>
                   </Select>
                 </FormControl>
-                <Box
-                  display="flex"
-                  alignItems="center"
-                  sx={{ marginLeft: "10px" }}
-                >
-                  {!isSearchOpen ? (
-                    <IconButton
-                      sx={{ width: "60px", height: "60px" }} // Increase button size
-                      onClick={handleSearchIconClick}
-                      aria-label="search"
-                    >
-                      <SearchIcon sx={{ fontSize: "36px" }} />{" "}
-                      {/* Increase icon size */}
-                    </IconButton>
-                  ) : (
-                    <>
-                      <TextField
-                        variant="outlined"
-                        placeholder="Search..."
-                        value={searchTerm}
-                        onChange={handleSearchChange} // Only use this handler
-                        // onKeyPress={(event) => {
-                        //   // Prevent space key press at the start or end
-                        //   if (
-                        //     event.key === " " &&
-                        //     (searchTerm.trim() === "" ||
-                        //       searchTerm.startsWith(" ") ||
-                        //       searchTerm.endsWith(" "))
-                        //     // (!searchTerm || searchTerm.trim() === "")
-                        //   ) {
-                        //     event.preventDefault();
-                        //   }
-                        // }}
-                        size="small"
-                        onBlur={handleSearchBlur}
-                        autoFocus
-                        sx={{ width: 250 }}
-                        InputProps={{
-                          startAdornment: (
-                            <InputAdornment position="start">
-                              <SearchIcon sx={{ fontSize: "20px" }} />{" "}
-                              {/* Adjust size in input */}
-                            </InputAdornment>
-                          ),
-                          style: { fontSize: "11px" },
-                        }}
-                      />
-                    </>
-                  )}
-                </Box>
+
                 {/* Only show "Clear all" when search field is open */}
                 {/* <Box
                   display="flex"
@@ -1042,7 +1060,7 @@ function ProductList() {
                 <Tooltip title="Import File" arrow>
                   <IconButton
                     color="primary"
-                    style={{ padding:0 }}
+                    style={{ padding: 0 }}
                     onClick={handleOpenPopup}
                   >
                     <FileDownloadOutlinedIcon
@@ -1055,7 +1073,7 @@ function ProductList() {
                 </Tooltip>
               </Box>
 
-              <Box display="flex" justifyContent="space-between">
+              <Box display="flex" justifyContent="space-between" alignItems="center" mt={1}>
                 <Box>
                   <Button
                     sx={{
@@ -1072,11 +1090,89 @@ function ProductList() {
                     Clear filters
                   </Button>
                 </Box>
-                <Box>
-                  <Button sx={{ p: 0, mb: 1, textTransform: "none" }}>
+                <Box sx={{ display: "flex", alignItems: "center" }}>
+                  <Box
+                    display="flex"
+                    alignItems="center"
+                    sx={{ marginRight: "10px" }}
+                  >
+                    <TextField
+                      variant="outlined"
+                      placeholder="Search..."
+                      value={searchTerm}
+                      onChange={handleSearchChange} // Only use this handler
+                      // onKeyPress={(event) => {
+                      //   // Prevent space key press at the start or end
+                      //   if (
+                      //     event.key === " " &&
+                      //     (searchTerm.trim() === "" ||
+                      //       searchTerm.startsWith(" ") ||
+                      //       searchTerm.endsWith(" "))
+                      //     // (!searchTerm || searchTerm.trim() === "")
+                      //   ) {
+                      //     event.preventDefault();
+                      //   }
+                      // }}
+                      size="small"
+                      onBlur={handleSearchBlur}
+                      autoFocus
+                      sx={{ width: 250 }}
+                      InputProps={{
+                        startAdornment: (
+                          <InputAdornment position="start">
+                            <SearchIcon sx={{ fontSize: "20px" }} />{" "}
+
+                          </InputAdornment>
+                        ),
+                        style: { fontSize: "11px" },
+                      }}
+                    />
+                  </Box>
+                  <Button sx={{ p: 0, textTransform: "none" }}>
                     Total Products : {filteredItems.length}
                   </Button>
                 </Box>
+              </Box>
+              <Box
+                sx={{
+                  display: "flex",
+                  flexWrap: "wrap",
+                  gap: 1,
+                  margin: "10px",
+                }}
+              >
+                {selectedBrandNames.map((name, index) => (
+                  <Box
+                    key={selectedBrandIds[index]}
+                    sx={{
+                      display: "flex",
+                      alignItems: "center",
+                      padding: "3px 9px",
+                      backgroundColor: "#d3d3d38c",
+                      borderRadius: "25px",
+                    }}
+                  >
+                    <Typography
+                      sx={{
+                        fontSize: "10px",
+                        fontWeight: 500,
+                        textTransform: "none",
+
+                        color: "black",
+                      }}
+                    >
+                      {name}
+                    </Typography>
+                    <CloseIcon
+                      sx={{
+                        fontSize: "12px",
+                        cursor: "pointer",
+                        marginLeft: "5px",
+                      }}
+                      onClick={() => handleTagRemove(selectedBrandIds[index])}
+                    />
+                  </Box>
+                ))}
               </Box>
             </Box>
 
@@ -1156,9 +1252,10 @@ function ProductList() {
                           <MoreVertIcon sx={{ fontSize: "14px" }} />
                         </IconButton>
                       </TableCell>
-                      <TableCell sx={{ textAlign: "center" }}>
-                        Visibility
-                      </TableCell>
+                      <TableCell sx={{ textAlign: "center" }}>Visibility
+                <IconButton onClick={(e) => handleOpenMenu(e, "visible")}>
+                    <MoreVertIcon sx={{ fontSize: "14px" }} />
+                  </IconButton></TableCell>
                     </TableRow>
                   </TableHead>
                   <TableBody>
@@ -1401,9 +1498,7 @@ function ProductList() {
                                 </Tooltip>
                               </TableCell>
 
-                              <TableCell
-                                onClick={() => handleToggleVisibility(item.id)}
-                              >
+                              <TableCell>
                                 {isBulkEditing ? (
                                   <IconButton
                                     disabled={!selectedItems.has(item.id)}
@@ -1414,11 +1509,11 @@ function ProductList() {
                                           <Visibility
                                             sx={{
                                               fontSize: "18px",
-                                              color: "inherit", // Default color
+                                              color: "inherit",
                                               "&:hover": {
                                                 color: "blue", // Change to blue on hover
                                               },
-                                              cursor: "pointer", // Optional: Add a pointer cursor on hover
+                                              cursor: "pointer",
                                             }}
                                           />
                                         </Tooltip>
@@ -1427,11 +1522,11 @@ function ProductList() {
                                           <VisibilityOff
                                             sx={{
                                               fontSize: "18px",
-                                              color: "inherit", // Default color
+                                              color: "inherit",
                                               "&:hover": {
-                                                color: "blue", // Change to blue on hover
+                                                color: "blue",
                                               },
-                                              cursor: "pointer", // Optional: Add a pointer cursor on hover
+                                              cursor: "pointer",
                                             }}
                                           />
                                         </Tooltip>
@@ -1441,11 +1536,11 @@ function ProductList() {
                                         <Visibility
                                           sx={{
                                             fontSize: "18px",
-                                            color: "inherit", // Default color
+                                            color: "inherit",
                                             "&:hover": {
-                                              color: "blue", // Change to blue on hover
+                                              color: "blue",
                                             },
-                                            cursor: "pointer", // Optional: Add a pointer cursor on hover
+                                            cursor: "pointer",
                                           }}
                                         />
                                       </Tooltip>
@@ -1454,11 +1549,11 @@ function ProductList() {
                                         <VisibilityOff
                                           sx={{
                                             fontSize: "18px",
-                                            color: "inherit", // Default color
+                                            color: "inherit",
                                             "&:hover": {
-                                              color: "blue", // Change to blue on hover
+                                              color: "blue",
                                             },
-                                            cursor: "pointer", // Optional: Add a pointer cursor on hover
+                                            cursor: "pointer",
                                           }}
                                         />
                                       </Tooltip>
@@ -1469,11 +1564,11 @@ function ProductList() {
                                     <Visibility
                                       sx={{
                                         fontSize: "18px",
-                                        color: "inherit", // Default color
+                                        color: "inherit",
                                         "&:hover": {
-                                          color: "blue", // Change to blue on hover
+                                          color: "blue",
                                         },
-                                        cursor: "pointer", // Optional: Add a pointer cursor on hover
+                                        cursor: "pointer",
                                       }}
                                     />
                                   </Tooltip>
@@ -1482,11 +1577,11 @@ function ProductList() {
                                     <VisibilityOff
                                       sx={{
                                         fontSize: "18px",
-                                        color: "inherit", // Default color
+                                        color: "inherit",
                                         "&:hover": {
-                                          color: "blue", // Change to blue on hover
+                                          color: "blue",
                                         },
-                                        cursor: "pointer", // Optional: Add a pointer cursor on hover
+                                        cursor: "pointer",
                                       }}
                                     />
                                   </Tooltip>
@@ -1628,6 +1723,17 @@ function ProductList() {
                   </MenuItem>
                 </>
               )}
+
+{currentColumn === "visible" && (
+  <>
+    <MenuItem onClick={() => handleSelectVisible("visible", "visibleOff")}>
+      Hide
+    </MenuItem>
+    <MenuItem onClick={() => handleSelectVisible("visible", "visibleOn")}>
+      Unhide
+    </MenuItem>
+  </>
+)}
             </Menu>
             {isPopupOpen && (
               <PopupModal onClose={() => setIsPopupOpen(false)} />

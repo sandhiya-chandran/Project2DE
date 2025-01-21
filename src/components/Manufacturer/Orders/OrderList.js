@@ -199,6 +199,15 @@ const OrderList = () => {
     }
   };
 
+  const handleSelectSort = (key, direction) => {
+    console.log('army',key, direction)
+    setSortConfig({ key, direction });
+    setPage(0);  // Reset page to 0 when sorting is applied
+    fetchOrders( key, direction);
+    setAnchorEl(null);  // Close the menu after selection
+  };
+
+
   const handleStatusFilter = (statusType, status) => {
     // Clear all filters except the one that was selected
     if (statusType === "delivery_status") {
@@ -478,32 +487,32 @@ const OrderList = () => {
               <TableRow>
                 <TableCell align="center">
                   OrderId
-                  <IconButton onClick={(e) => handleOpenMenu(e, "_id")}>
-                    {/* <MoreVertIcon sx={{ fontSize: "14px" }} /> */}
+                  <IconButton onClick={(e) => handleOpenMenu(e, "order_id")}>
+                    <MoreVertIcon sx={{ fontSize: "14px" }} />
                   </IconButton>
                 </TableCell>
                 <TableCell align="center">
                   Dealer Name
                   <IconButton onClick={(e) => handleOpenMenu(e, "dealer_name")}>
-                    {/* <MoreVertIcon sx={{ fontSize: "14px" }} /> */}
+                    <MoreVertIcon sx={{ fontSize: "14px" }} />
                   </IconButton>
                 </TableCell>
                 <TableCell align="center">
                   Destination
-                  <IconButton onClick={(e) => handleOpenMenu(e, "destination")}>
-                    {/* <MoreVertIcon sx={{ fontSize: "14px" }} /> */}
-                  </IconButton>
+                  {/* <IconButton onClick={(e) => handleOpenMenu(e, "destination ")}>
+                    <MoreVertIcon sx={{ fontSize: "14px" }} />
+                  </IconButton> */}
                 </TableCell>
                 <TableCell align="center">
                   Total Items
                   <IconButton onClick={(e) => handleOpenMenu(e, "total_items")}>
-                    {/* <MoreVertIcon sx={{ fontSize: "14px" }} /> */}
+                    <MoreVertIcon sx={{ fontSize: "14px" }} />
                   </IconButton>
                 </TableCell>
                 <TableCell align="center">
                   Order Value
                   <IconButton onClick={(e) => handleOpenMenu(e, "amount")}>
-                    {/* <MoreVertIcon sx={{ fontSize: "14px" }} /> */}
+                    <MoreVertIcon sx={{ fontSize: "14px" }} />
                   </IconButton>
                 </TableCell>
                 <TableCell align="center">
@@ -511,7 +520,7 @@ const OrderList = () => {
                   <IconButton
                     onClick={(e) => handleOpenMenu(e, "creation_date")}
                   >
-                    {/* <MoreVertIcon sx={{ fontSize: "14px" }} /> */}
+                    <MoreVertIcon sx={{ fontSize: "14px" }} />
                   </IconButton>
                 </TableCell>
                 <TableCell align="center">
@@ -571,7 +580,7 @@ const OrderList = () => {
     : 'N/A'}
 </TableCell>
                       <TableCell align="center">{order.total_items}</TableCell>
-                      <TableCell align="center">{order.amount}</TableCell>
+                      <TableCell align="center">{order.amount}{order.currency}</TableCell>
                       <TableCell align="center">
                         {new Date(order.creation_date).toLocaleDateString()}
                       </TableCell>
@@ -625,7 +634,7 @@ const OrderList = () => {
               ) : (
                 <TableRow>
                   <TableCell colSpan={9} style={{color: '#888'}} align="center">
-                    No Orders Found
+                  No Orders Available
                   </TableCell>
                 </TableRow>
               )}
@@ -650,6 +659,73 @@ const OrderList = () => {
         open={Boolean(anchorEl)}
         onClose={handleCloseMenu}
       >
+
+        {currentColumn === "order_id" && (
+                  <>
+                    <MenuItem onClick={() => handleSelectSort("order_id", "asc")}>
+                      Sort Low to High
+                    </MenuItem>
+                    <MenuItem onClick={() => handleSelectSort("order_id", "desc")}>
+                      Sort High to Low
+                    </MenuItem>
+                  </>
+                )}
+
+{currentColumn === "dealer_name" && (
+                  <>
+                    <MenuItem onClick={() => handleSelectSort("dealer_name", "asc")}>
+                    Sort A to Z
+                    </MenuItem>
+                    <MenuItem onClick={() => handleSelectSort("dealer_name", "desc")}>
+                    Sort Z to A
+                    </MenuItem>
+                  </>
+                )}
+
+{currentColumn === "destination" && (
+                  <>
+                    <MenuItem onClick={() => handleSelectSort("destination", "asc")}>
+                      Sort A to Z
+                    </MenuItem>
+                    <MenuItem onClick={() => handleSelectSort("destination", "desc")}>
+                      Sort Z to A
+                    </MenuItem>
+                  </>
+                )}
+        
+        {currentColumn === "total_items" && (
+                  <>
+                    <MenuItem onClick={() => handleSelectSort("total_items", "asc")}>
+                      Sort Low to High
+                    </MenuItem>
+                    <MenuItem onClick={() => handleSelectSort("total_items", "desc")}>
+                      Sort High to Low
+                    </MenuItem>
+                  </>
+                )}
+        
+        {currentColumn === "amount" && (
+                  <>
+                    <MenuItem onClick={() => handleSelectSort("amount", "asc")}>
+                      Sort Low to High
+                    </MenuItem>
+                    <MenuItem onClick={() => handleSelectSort("amount", "desc")}>
+                      Sort High to Low
+                    </MenuItem>
+                  </>
+                )}
+        
+        {currentColumn === "creation_date" && (
+                  <>
+                    <MenuItem onClick={() => handleSelectSort("creation_date", "asc")}>
+                      Lowest
+                    </MenuItem>
+                    <MenuItem onClick={() => handleSelectSort("creation_date", "desc")}>
+                     Highest
+                    </MenuItem>
+                  </>
+                )}
+        
         {currentColumn === "delivery_status" && (
           <>
             <MenuItem

@@ -4,6 +4,7 @@ import { useLocation } from "react-router-dom";
 import axios from "axios";
 import Tooltip from "@mui/material/Tooltip";
 import CloseIcon from "@mui/icons-material/Close";
+import SearchIcon from "@mui/icons-material/Search";
 import {
   Card,
   CardMedia,
@@ -38,10 +39,13 @@ import { useNavigate } from "react-router-dom";
 import FavoriteBorderIcon from "@mui/icons-material/FavoriteBorder";
 import FavoriteIcon from "@mui/icons-material/Favorite";
 import ProductBrand from "./ProductBrands";
+import PriceRangeFilter from './PriceRangeFilter';
 
 const ProductList = ({ fetchCartCount }) => {
   const location = useLocation();
   const navigate = useNavigate();
+
+  const userData = localStorage.getItem("user");
 
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -50,7 +54,6 @@ const ProductList = ({ fetchCartCount }) => {
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [quantity, setQuantity] = useState({});
   const [cartItems, setCartItems] = useState([]);
-
   const [sortByValue, setSortByValue] = useState(1);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState([]);
@@ -61,24 +64,25 @@ const ProductList = ({ fetchCartCount }) => {
   const [selectedCategoryId, setSelectedCategoryId] = useState(null); // Tracks the selected category ID
   const [industry, setIndustry] = useState(null); // Stores the selected industry object
   const [Category, setCategory] = useState(null); // Stores the selected Category object
-
   const [page, setPage] = useState(1); // Current page
   const [productsCount, setProductsCount] = useState([]);
   const [totalPages, setTotalPages] = useState(1); // Total pages
   const productsPerPage = 100; // Number of products per page
-
   const [wishlistProducts, setWishlistProducts] = useState([]);
   const [isInWishlist, setIsInWishlist] = useState(false);
   const [selectedBrandIds, setSelectedBrandIds] = useState([]);
-
-  const userData = localStorage.getItem("user");
   const [debounceTimer, setDebounceTimer] = useState(null);
   const debounceTimerRef = useRef(null);
-  
-
-  
+  const [priceRange, setPriceRange] = useState({ price_from: 0, price_to: '' });
   const [selectedBrandNames, setSelectedBrandNames] = useState([]); // For Tags
+  const [noProductsFound, setNoProductsFound] = useState(false); // No products found state
 
+
+  const handlePriceChange = (newRange) => {
+    setPriceRange(newRange);
+    setPage(1);
+  };
+  
   const handleReload = () => {
     window.location.reload(); // Reloads the current browser window
   };
@@ -91,6 +95,7 @@ const ProductList = ({ fetchCartCount }) => {
 
   setSelectedBrandIds(ids); // Update IDs for API
   setSelectedBrandNames(names); // Update names for tags
+  setPage(1);
 };
 
 // Handle tag removal
@@ -135,6 +140,8 @@ const handleTagRemove = (id) => {
             sort_by_value: sortByValue,
             filters: "all",
             brand_id_list: selectedBrandIds,
+            price_from: priceRange.price_from,
+            price_to: priceRange.price_to, 
           };
 
           const productResponse = await axios.post(
@@ -142,7 +149,15 @@ const handleTagRemove = (id) => {
             requestData
           );
 
-          setProducts(productResponse.data.data || []);
+          const products = productResponse.data.data || [];
+        setProducts(products);
+
+        if (products.length === 0) {
+          setNoProductsFound(true);
+        } else {
+          setNoProductsFound(false);
+        }
+  
           console.log(productResponse.data);
           console.log("Selected Brand Ids:", selectedBrandIds);
         } catch (err) {
@@ -154,7 +169,7 @@ const handleTagRemove = (id) => {
 
       fetchData();
     }
-  }, [sortByValue, selectedCategoryId, industry, page, selectedBrandIds]);
+  }, [sortByValue, selectedCategoryId, industry, page, selectedBrandIds , priceRange]);
 
   // productCountForDealer
   useEffect(() => {
@@ -181,6 +196,8 @@ const handleTagRemove = (id) => {
             product_category_id: selectedCategoryId || "",
             industry_id: industry?.id || "",
             filters: "all",
+            price_from: priceRange.price_from,
+            price_to: priceRange.price_to, 
             brand_id_list: selectedBrandIds || [], // Add selectedBrandIds to the request body
           };
 
@@ -207,7 +224,7 @@ const handleTagRemove = (id) => {
 
       productCountForDealer();
     }
-  }, [selectedCategoryId, industry, selectedBrandIds]); // Added selectedBrandIds as dependency
+  }, [selectedCategoryId, industry, selectedBrandIds,priceRange]); // Added selectedBrandIds as dependency
 
   // Fetch industries on component mount
   useEffect(() => {
@@ -560,8 +577,9 @@ const handleTagRemove = (id) => {
 
   return (
     <div>
+     
       <Grid container spacing={1}>
-        <Grid item xs={12} md={1.5}>
+        <Grid item xs={12} md={1.8}>
           <Box
             sx={{
               position: "sticky",
@@ -578,9 +596,13 @@ const handleTagRemove = (id) => {
               selectedBrandsProp={selectedBrandIds}
             />
 
+           <PriceRangeFilter onPriceChange={handlePriceChange} />
+
+           {/* <ProductList price_from={priceRange.price_from} price_to={priceRange.price_to} /> */}
+
           </Box>
         </Grid>
-        <Grid item xs={12} md={10.5}>
+        <Grid item xs={12} md={10.2}>
           <Box>
             <Box
               sx={{
@@ -754,6 +776,12 @@ const handleTagRemove = (id) => {
                     value={searchQuery}
                     onChange={handleSearchChange}
                     InputProps={{
+                      startAdornment: (
+                        <InputAdornment position="start">
+                          <SearchIcon sx={{ fontSize: "20px" }} />{" "}
+                          {/* Adjust size in input */}
+                        </InputAdornment>
+                      ),
                       endAdornment: searchQuery && (
                         <InputAdornment position="end">
                           <IconButton
@@ -826,7 +854,11 @@ const handleTagRemove = (id) => {
               justifyContent="flex-start"
               sx={{ margin: "0px 10px" }}
             >
-              {searchLoading ? (
+              {noProductsFound ? (
+       <Typography variant="h6" color="text.secondary" align="center" justifyContent={"center"}>
+       No products found
+     </Typography>
+    ) : searchLoading ? (
                 // Show a loading spinner for search results while data is being fetched
                 <Box
                   display="flex"
@@ -837,7 +869,7 @@ const handleTagRemove = (id) => {
                   <CircularProgress />
                 </Box>
               ) : searchQuery && searchResults.length === 0 ? (
-                <Typography variant="h6" color="text.secondary" align="center">
+                <Typography variant="h6" color="text.secondary" align="center" justifyContent={"center"}>
                   No products found for "{searchQuery}"
                 </Typography>
               ) : error ? (
@@ -848,13 +880,13 @@ const handleTagRemove = (id) => {
               ) : selectedCategoryId &&
                 (searchQuery ? searchResults : products).length === 0 ? (
                 // Show message if no products are found for the selected category
-                <Typography variant="h6" color="text.secondary" align="center">
+                <Typography variant="h6" color="text.secondary" align="center" justifyContent={"center"}>
                   No products found under this category.
                 </Typography>
               ) : industry &&
                 (searchQuery ? searchResults : products).length === 0 ? (
                 // Show message if no products are found for the selected category
-                <Typography variant="h6" color="text.secondary" align="center">
+                <Typography variant="h6" color="text.secondary" align="center" justifyContent={"center"}>
                   No products found under this Industry.
                 </Typography>
               ) : (
