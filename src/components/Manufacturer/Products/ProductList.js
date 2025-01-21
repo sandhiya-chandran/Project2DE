@@ -809,7 +809,7 @@ function ProductList() {
     setEditedVisibility(updatedVisibility);
   
     // Optionally, reset the sorting configuration and close the menu after selection
-    setSortConfig({ key, direction });
+    // setSortConfig({ key, direction });
     setPage(0); // Reset page to 0 when sorting is applied
     setAnchorEl(null); // Close the menu after selection
   };
