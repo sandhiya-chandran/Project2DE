@@ -5,11 +5,18 @@ import axios from 'axios';
 import { TextField, Button, Box, Typography,IconButton, InputAdornment ,CircularProgress} from '@mui/material';
 import { Visibility, VisibilityOff } from '@mui/icons-material';
 import './Login.css';
+import ForgotPassword from './ForgotPassword';
 
 const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
+
+  const toggleForgotPassword = () => {
+    setShowForgotPassword(!showForgotPassword);
+  };
   
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
@@ -82,8 +89,13 @@ const Login = () => {
         </Typography>
       </Box>
 
+     
+
       {/* Right side */}
       <Box flex={1} display="flex" justifyContent="center" alignItems="center">
+      {showForgotPassword ? (
+        <ForgotPassword onClose={toggleForgotPassword} />
+      ) : (
         <Box display="flex" flexDirection="column" alignItems="center" gap={2} width="100%" maxWidth="400px" mx="auto" px={3}>
           <Typography variant="h5" color="textPrimary" gutterBottom>
             Sign In
@@ -142,10 +154,13 @@ const Login = () => {
             variant="body2"
             color="primary"
             style={{ cursor: 'pointer', alignSelf: 'flex-end' }}
+            onClick={toggleForgotPassword}
           >
             Forgot Password?
           </Typography>
         </Box>
+      )}
+       
       </Box>
     </Box>
   );

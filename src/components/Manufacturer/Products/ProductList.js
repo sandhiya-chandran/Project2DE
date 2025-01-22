@@ -44,6 +44,7 @@ import soonImg from "../../assets/soon-img.png";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import CancelIcon from "@mui/icons-material/Cancel";
 import ProductBrand from "./ProductBrands";
+import PriceRangeFilter from './PriceRangeFilter';
 
 function ProductList() {
   const location = useLocation();
@@ -83,6 +84,15 @@ function ProductList() {
   const [childCategories, setChildCategories] = useState([]); // Child categories
   const [selectedChild, setSelectedChild] = useState(""); // Selected child category ID
   const [selectedBrandNames, setSelectedBrandNames] = useState([]); // For Tags
+  const [priceRange, setPriceRange] = useState({ price_from: 0, price_to: '' });
+  const [noProductsFound, setNoProductsFound] = useState(false); // No products found state
+
+
+  const handlePriceChange = (newRange) => {
+    setPriceRange(newRange);
+    // setPage(1);
+  };
+
 
   const userData = localStorage.getItem("user");
 
@@ -168,6 +178,8 @@ function ProductList() {
         sort_by: sortConfig.key,
         sort_by_value: sortConfig.direction === "asc" ? 1 : -1,
         is_parent: isParent, // Correctly set is_parent
+        price_from: priceRange.price_from,
+        price_to: priceRange.price_to, 
         brand_id_list: selectedBrandIds,
       };
   
@@ -203,6 +215,7 @@ function ProductList() {
     industry,
     sortConfig,
     selectedBrandIds,
+    priceRange
   ]);
 
   // Handle brand selection changes from ProductBrand
@@ -505,7 +518,7 @@ function ProductList() {
       } catch (error) {
         console.error("Error during search:", error);
       }
-    }, 1000);
+    }, 500);
   };
 
   const handleSearchIconClick = () => {
@@ -837,6 +850,9 @@ function ProductList() {
               isParent={selectedCategory?.is_parent || false} // Pass isParent based on selectedCategory
               selectedBrandsProp={selectedBrandIds}
             />
+
+            <PriceRangeFilter onPriceChange={handlePriceChange} />
+
           </Box>
         </Grid>
         <Grid item xs={12} md={10.5} p={0}>
@@ -1253,9 +1269,11 @@ function ProductList() {
                         </IconButton>
                       </TableCell>
                       <TableCell sx={{ textAlign: "center" }}>Visibility
-                <IconButton onClick={(e) => handleOpenMenu(e, "visible")}>
-                    <MoreVertIcon sx={{ fontSize: "14px" }} />
-                  </IconButton></TableCell>
+                      {isBulkEditing && (
+  <IconButton onClick={(e) => handleOpenMenu(e, "visible")}>
+    <MoreVertIcon sx={{ fontSize: "14px" }} />
+  </IconButton>
+)}</TableCell>
                     </TableRow>
                   </TableHead>
                   <TableBody>
