@@ -20,7 +20,6 @@ import {
   FormControl,
   Checkbox,
   Button,
-  InputLabel,
   TablePagination,
   Tooltip,
   Menu,
@@ -33,7 +32,7 @@ import {
   Visibility,
   VisibilityOff,
   MoreVert as MoreVertIcon,
-  Discount,
+  
 } from "@mui/icons-material";
 import PopupModal from "./PopupModel";
 import SearchIcon from "@mui/icons-material/Search";
@@ -86,13 +85,6 @@ function ProductList() {
   const [selectedBrandNames, setSelectedBrandNames] = useState([]); // For Tags
   const [priceRange, setPriceRange] = useState({ price_from: 0, price_to: '' });
   const [noProductsFound, setNoProductsFound] = useState(false); // No products found state
-
-
-  const handlePriceChange = (newRange) => {
-    setPriceRange(newRange);
-    // setPage(1);
-  };
-
 
   const userData = localStorage.getItem("user");
 
@@ -826,6 +818,13 @@ function ProductList() {
     setPage(0); // Reset page to 0 when sorting is applied
     setAnchorEl(null); // Close the menu after selection
   };
+
+
+  const handlePriceChange = (newRange) => {
+    setPriceRange(newRange);
+    // setPage(1);
+  };
+
   
 
   if (error) return <div>{error}</div>;

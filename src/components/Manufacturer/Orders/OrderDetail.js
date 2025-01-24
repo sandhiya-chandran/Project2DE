@@ -27,8 +27,10 @@ import {
   DialogActions,
   Card,
   CardContent,
-  CircularProgress
+  CircularProgress,
+  Checkbox,
 } from "@mui/material";
+
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import DownloadIcon from "@mui/icons-material/Download";
 import CloseIcon from "@mui/icons-material/Close";
@@ -36,11 +38,7 @@ import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
 import { useParams, useNavigate } from "react-router-dom";
 import axios from "axios";
-import {
-  LocalShipping as LocalShippingIcon,
-  CheckCircle as CheckCircleIcon,
-  Pending as PendingIcon,
-} from "@mui/icons-material";
+
 const OrderDetail = () => {
   const navigate = useNavigate();
   const { id } = useParams();
@@ -57,6 +55,12 @@ const OrderDetail = () => {
   const [previewImage, setPreviewImage] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [action, setAction] = useState(""); // 'accept' or 'reject'
+
+  const [selectedProductIds, setSelectedProductIds] = React.useState([]); // To track selected product IDs
+
+  const [selectedRows, setSelectedRows] = useState([]);
+
+  const isRowSelected = (index) => selectedRows.includes(index);
 
   const handleOpenDialog = (actionType) => {
     setAction(actionType); // Set the action to either 'Accept' or 'Reject'
@@ -143,525 +147,621 @@ const OrderDetail = () => {
     });
   };
 
-  // Return loading state if orderDetails is not yet available
-    if (loading) {
-      return (
-        <Box
-          sx={{
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
-            height: "100vh",
-          }}
-        >
-          <CircularProgress />
-        </Box>
+  const handleSelectAll = (event) => {
+    if (event.target.checked) {
+      // Filter products excluding those with "Shipped" status
+      const filteredProducts = orderDetails.product_list.filter(
+        (product) => product.product_status !== "Shipped"
       );
+
+      // Get the IDs and indices of the filtered products
+      const allProductIds = filteredProducts.map((product) => product.id);
+      const selectedRows = filteredProducts.map((product) =>
+        orderDetails.product_list.indexOf(product)
+      );
+
+      setSelectedRows(selectedRows); // Select rows by index
+      setSelectedProductIds(allProductIds); // Store filtered product IDs in state
+    } else {
+      // Deselect all
+      setSelectedRows([]);
+      setSelectedProductIds([]);
     }
+  };
+
+  const handleRowSelect = (index) => {
+    const productId = orderDetails.product_list[index]?.id; // Get product ID of the selected row
+    if (selectedRows.includes(index)) {
+      // Deselect row
+      setSelectedRows(selectedRows.filter((rowIndex) => rowIndex !== index));
+      setSelectedProductIds(
+        selectedProductIds.filter((id) => id !== productId)
+      );
+    } else {
+      // Select row
+      setSelectedRows([...selectedRows, index]);
+      setSelectedProductIds([...selectedProductIds, productId]);
+    }
+  };
+
+  useEffect(() => {
+    console.log("Selected Product IDs handleSelectAll:", selectedProductIds);
+  }, [selectedProductIds]);
+
+  const notifyBuyerForAvailableProducts = async () => {
+    try {
+      const response = await axios.post(
+        `${process.env.REACT_APP_IP}notifyBuyerForAvailableProductsInOrder/`,
+        {
+          order_id: id,
+          user_cart_item_ids: selectedProductIds,
+        }
+      );
+      console.log("Notification sent successfully:", response.data);
+      await fetchOrderDetails();
+      setSelectedRows([]);
+      setSelectedProductIds([]);
+    } catch (error) {
+      console.error("Error sending notification:", error);
+      // Handle error (e.g., show an error message)
+    }
+  };
+
+  // Return loading state if orderDetails is not yet available
+  if (loading) {
+    return (
+      <Box
+        sx={{
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          height: "100vh",
+        }}
+      >
+        <CircularProgress />
+      </Box>
+    );
+  }
 
   return (
-    <Box >
-      {/* <Button startIcon={<ArrowBackIcon />} style={{textTransform:'capitalize'}} onClick={handleBreadcrum} variant="text">
-      Order / Order Details
-    </Button> */}
-
-      <Box sx={{ display:'flex', justifyContent:'space-between' , alignItems:'flex-start', padding:'20px 20px 0px 20px'}}>
-       <Box>
-       <Button
-          variant="outlined"
-          onClick={generateInvoice}
-          color="primary"
-          sx={{marginRight:2, marginBottom:2}}
-        >
-          Purchase Order
-        </Button>
-       
-        <Button disabled variant="outlined" color="primary" sx={{marginRight:2, marginBottom:2}}>
-          Track Order
-        </Button>
-        <Button disabled variant="outlined" color="primary" sx={{marginRight:2, marginBottom:2}}>
-          Reject order
-        </Button>
-        <Button disabled variant="outlined" color="primary" sx={{marginRight:2, marginBottom:2}}>
-           Lead time 
-        </Button>
-        <Button disabled variant="outlined" color="primary" sx={{marginRight:2, marginBottom:2}}>
-           Fulfilment
-        </Button>
-       </Box>
-
-        <Box>
-        <Box>
-          {/* Conditionally render radio buttons based on payment status */}
-          {orderDetails?.payment_status === "Paid" && (
-            <Box>
-              <Typography variant="subtitle1" fontWeight="bold" mb={1}>
-                Update Payment Status
-              </Typography>
-              <RadioGroup
-                row
-                value={action} // Bind the value of the radio group to the state variable 'action'
-                onChange={(e) => handleOpenDialog(e.target.value)} // Update state when radio button changes
-              >
-                <FormControlLabel
-                  value="Accept" // Value of the radio button
-                  control={<Radio sx={{ color: "green" }} />} // Radio button with green color
-                  label="Accept" // Label for the radio button
-                  sx={{ color: "green" }}
-                />
-                <FormControlLabel
-                  value="Reject" // Value of the radio button
-                  control={<Radio sx={{ color: "red" }} />} // Radio button with red color
-                  label="Reject" // Label for the radio button
-                  sx={{ color: "red" }}
-                />
-              </RadioGroup>
-            </Box>
-          )}
-        </Box>
-
-        {/* Confirmation Dialog */}
-        <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)}>
-          <DialogTitle>
-            {action === "Accept"
-              ? "Confirm Accept Order"
-              : "Confirm Reject Order"}
-          </DialogTitle>
-          <DialogContent>
-            Are you sure you want to{" "}
-            <strong>
-              {action === "Accept" ? "accept" : "reject"} this Payment?
-            </strong>
-          </DialogContent>
-          <DialogActions>
-            <Button onClick={() => setDialogOpen(false)} color="primary">
-              Cancel
-            </Button>
-            <Button
-              onClick={handleConfirm}
-              color={action === "Accept" ? "success" : "error"}
-              variant="contained"
-            >
-              {action === "Accept" ? "Accept" : "Reject"}
-            </Button>
-          </DialogActions>
-        </Dialog>
-        </Box>
-      </Box>
-<div id="invoice" style={{ padding: "20px" }}>
-  
-<Box
-        display="flex"
-        justifyContent="space-between"
-        alignItems="flex-start"
-        mb={3}
+    <Box>
+      <Box
+        sx={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "flex-start",
+          padding: "20px 20px 0px 20px",
+        }}
       >
-        {/* Left Section: Order ID and Status */}
         <Box>
-          {/* <Typography variant="h5" fontWeight="bold" mb={1}>
-          Order #{orderDetails?.order_id}
-        </Typography> */}
+          <Button
+            variant="outlined"
+            onClick={generateInvoice}
+            color="primary"
+            sx={{ marginRight: 2, marginBottom: 2 }}
+          >
+            Purchase Order
+          </Button>
 
-          {/* Status Chip
-        <Chip
-          icon={
-            orderDetails?.delivery_status === "Shipping" ? (
-              <LocalShippingIcon />
-            ) : orderDetails?.delivery_status === "Completed" ? (
-              <CheckCircleIcon />
-            ) : (
-              <PendingIcon />
-            )
-          }
-          label={
-            orderDetails?.delivery_status === "Shipping"
-              ? "Shipping"
-              : orderDetails?.delivery_status === "Completed"
-              ? "Completed"
-              : "Pending"
-          }
-          color={
-            orderDetails?.delivery_status === "Shipping"
-              ? "info"
-              : orderDetails?.delivery_status === "Completed"
-              ? "success"
-              : "warning"
-          }
-          sx={{ fontWeight: "bold", fontSize: "1rem" }}
-        /> */}
+          <Button
+            disabled
+            variant="outlined"
+            color="primary"
+            sx={{ marginRight: 2, marginBottom: 2 }}
+          >
+            Track Order
+          </Button>
+          <Button
+            disabled
+            variant="outlined"
+            color="primary"
+            sx={{ marginRight: 2, marginBottom: 2 }}
+          >
+            Reject order
+          </Button>
+          <Button
+            disabled
+            variant="outlined"
+            color="primary"
+            sx={{ marginRight: 2, marginBottom: 2 }}
+          >
+            Lead time
+          </Button>
+          <Button
+            disabled
+            variant="outlined"
+            color="primary"
+            sx={{ marginRight: 2, marginBottom: 2 }}
+          >
+            Fulfilment
+          </Button>
         </Box>
 
-        {/* Right Section: Radio Buttons */}
-        
-      </Box>
-
-      <Box mb={3}>
-        <Grid container spacing={3}>
-          {/* Order Summary */}
-          <Grid item xs={12} sm={6}>
-            <Card
-              sx={{
-                height: "350px",
-                overflowY: "auto", // Default to auto
-                ...(350 > 350 && { overflowY: "scroll" }), // Example logic, replace 350 > 350 with actual condition
-                "&::-webkit-scrollbar": {
-                  width: "3px", // Scrollbar width
-                },
-                "&::-webkit-scrollbar-thumb": {
-                  backgroundColor: "#888", // Thumb color
-                  borderRadius: "10px", // Rounded scrollbar thumb
-                },
-                "&::-webkit-scrollbar-thumb:hover": {
-                  backgroundColor: "#555", // Hover effect
-                },
-              }}
-            >
-              <CardContent>
-                <Typography sx={{ fontSize: "16px" }} fontWeight="bold" mb={2}>
-                  Dealer Information
+        <Box>
+          <Box>
+            {/* Conditionally render radio buttons based on payment status */}
+            {orderDetails?.payment_status === "Paid" && (
+              <Box>
+                <Typography variant="subtitle1" fontWeight="bold" mb={1}>
+                  Update Payment Status
                 </Typography>
-                <Divider sx={{ my: 1 }} />
-                <Typography sx={{ fontSize: "14px" }}>
-                  <strong>Order ID: </strong>
-                  {orderDetails?.order_id}
-                </Typography>
-                <Typography sx={{ fontSize: "14px" }}>
-                  <strong>Buyer Name:: </strong>
-                  {orderDetails?.name}
-                </Typography>
-                <Typography sx={{ fontSize: "14px" }}>
-                  <strong>Email: </strong>
-                  {orderDetails?.email}
-                </Typography>
-                <Typography sx={{ fontSize: "14px" }}>
-                  <strong>Mobile: </strong>
-                  {orderDetails?.mobile_number}
-                </Typography>
-                <Typography sx={{ fontSize: "14px" }}>
-                  <strong>Order Date: </strong>
-                  {new Date(orderDetails?.placed_on).toLocaleString()}
-                </Typography>
-                <Typography sx={{ fontSize: "14px" }}>
-                  <strong>Total Items: </strong>
-                  {orderDetails?.total_items}
-                </Typography>
-                <Typography sx={{ fontSize: "14px" }}>
-                  <strong>Order Value: </strong>
-                  {orderDetails?.currency}
-                  {orderDetails?.total_amount}
-                </Typography>
-                <Typography sx={{ fontSize: "14px" }}>
-                  <strong>Delivery Status: </strong>
-                  {orderDetails?.delivery_status}
-                </Typography>
-                <Typography sx={{ fontSize: "14px" }}>
-                  <strong>Payment Status: </strong>
-                  {orderDetails?.payment_status}
-                </Typography>
-                <Typography sx={{ fontSize: "14px" }}>
-                  <strong>Fulfilled Status: </strong>
-                  {orderDetails?.fulfilled_status}
-                </Typography>
-              </CardContent>
-            </Card>
-          </Grid>
-
-          {/*  Transaction History */}
-          <Grid item xs={12} sm={6}>
-            <Card
-              sx={{
-                height: "350px",
-                overflowY: "auto", // Default to auto
-                ...(350 > 350 && { overflowY: "scroll" }), // Example logic, replace 350 > 350 with actual condition
-                "&::-webkit-scrollbar": {
-                  width: "3px", // Scrollbar width
-                },
-                "&::-webkit-scrollbar-thumb": {
-                  backgroundColor: "#888", // Thumb color
-                  borderRadius: "10px", // Rounded scrollbar thumb
-                },
-                "&::-webkit-scrollbar-thumb:hover": {
-                  backgroundColor: "#555", // Hover effect
-                },
-              }}
-            >
-              <CardContent>
-                <Typography
-                  variant="h6"
-                  fontWeight="bold"
-                  sx={{ fontSize: "16px" }}
-                  mb={2}
+                <RadioGroup
+                  row
+                  value={action} // Bind the value of the radio group to the state variable 'action'
+                  onChange={(e) => handleOpenDialog(e.target.value)} // Update state when radio button changes
                 >
-                  Transaction History
-                </Typography>
-                <Divider sx={{ my: 1 }} />
-                <List sx={{ p: 0 }}>
-                  {orderDetails?.transaction_list?.length > 0 ? (
-                    orderDetails.transaction_list.map((transaction, index) => (
-                      <ListItem key={index} sx={{ p: 0, mb: 2 }}>
-                        <Box sx={{ width: "100%" }}>
-                          <Typography
-                            sx={{ fontSize: "14px" }}
-                          >{`Transaction ${index + 1}`}</Typography>
-                          <Typography sx={{ fontSize: "14px" }}>
-                            <strong>Payment Date: </strong>
-                            {new Date(
-                              transaction.transaction_date
-                            ).toLocaleString()}
-                          </Typography>
-                          <Typography sx={{ fontSize: "14px" }}>
-                            <strong>Status: </strong>
-                            {transaction.status}
-                          </Typography>
-                          <Typography sx={{ fontSize: "14px" }}>
-                            <strong>Payment Reviewed Date: </strong>
-                            {new Date(
-                              transaction.updated_date
-                            ).toLocaleString()}
-                          </Typography>
-                          <Typography sx={{ fontSize: "14px" }}>
-                            <strong>Payment Proof: </strong>
-                            <div>
-                              <Tooltip title="Click to Preview" arrow>
-                                <img
-                                  src={`data:image/png;base64,${transaction.payment_proof}`}
-                                  alt="Payment Proof"
-                                  className="thumbnail"
-                                  style={{
-                                    width: 50,
-                                    height: 50,
-                                    cursor: "pointer",
-                                    objectFit: "contain",
-                                    border: "1px solid lightgray",
-                                    borderRadius: "5px",
-                                  }}
-                                  onClick={() =>
-                                    handlePreview(
-                                      `data:image/png;base64,${transaction.payment_proof}`
-                                    )
-                                  }
-                                />
-                              </Tooltip>
-                            </div>
-                          </Typography>
-                        </Box>
-                      </ListItem>
-                    ))
-                  ) : (
-                    <ListItem>
-                      <ListItemText primary="No Data Found" />
-                    </ListItem>
-                  )}
-                </List>
-              </CardContent>
-            </Card>
+                  <FormControlLabel
+                    value="Accept" // Value of the radio button
+                    control={<Radio sx={{ color: "green" }} />} // Radio button with green color
+                    label="Accept" // Label for the radio button
+                    sx={{ color: "green" }}
+                  />
+                  <FormControlLabel
+                    value="Reject" // Value of the radio button
+                    control={<Radio sx={{ color: "red" }} />} // Radio button with red color
+                    label="Reject" // Label for the radio button
+                    sx={{ color: "red" }}
+                  />
+                </RadioGroup>
+              </Box>
+            )}
+          </Box>
 
-            {/* Modal for Image Preview */}
-            <Modal open={isModalOpen} onClose={handleClose}>
-              <Box
+          {/* Confirmation Dialog */}
+          <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)}>
+            <DialogTitle>
+              {action === "Accept"
+                ? "Confirm Accept Order"
+                : "Confirm Reject Order"}
+            </DialogTitle>
+            <DialogContent>
+              Are you sure you want to{" "}
+              <strong>
+                {action === "Accept" ? "accept" : "reject"} this Payment?
+              </strong>
+            </DialogContent>
+            <DialogActions>
+              <Button onClick={() => setDialogOpen(false)} color="primary">
+                Cancel
+              </Button>
+              <Button
+                onClick={handleConfirm}
+                color={action === "Accept" ? "success" : "error"}
+                variant="contained"
+              >
+                {action === "Accept" ? "Accept" : "Reject"}
+              </Button>
+            </DialogActions>
+          </Dialog>
+        </Box>
+      </Box>
+      <div id="invoice" style={{ padding: "20px" }}>
+        <Box mb={3}>
+          <Grid container spacing={3}>
+            {/* Order Summary */}
+            <Grid item xs={12} sm={6}>
+              <Card
                 sx={{
-                  backgroundColor: "white",
-                  p: 2,
-                  m: 2,
-                  borderRadius: "5px",
-                  height: "80vh",
-                  width: "80vh",
-                  position: "absolute",
-                  top: "50%",
-                  left: "50%",
-                  transform: "translate(-50%, -50%)",
-
-                  outline: "none",
+                  height: "350px",
+                  overflowY: "auto", // Default to auto
+                  ...(350 > 350 && { overflowY: "scroll" }), // Example logic, replace 350 > 350 with actual condition
+                  "&::-webkit-scrollbar": {
+                    width: "3px", // Scrollbar width
+                  },
+                  "&::-webkit-scrollbar-thumb": {
+                    backgroundColor: "#888", // Thumb color
+                    borderRadius: "10px", // Rounded scrollbar thumb
+                  },
+                  "&::-webkit-scrollbar-thumb:hover": {
+                    backgroundColor: "#555", // Hover effect
+                  },
                 }}
               >
-                {previewImage && (
-                  <Box>
-                    <Box
-                      sx={{ display: "flex", justifyContent: "space-between" }}
-                    >
-                      {/* Download Icon */}
-                      <Tooltip title="Download Image">
-                        <IconButton
-                          component="a"
-                          href={previewImage}
-                          download={`Payment_Proof_${new Date().toISOString()}.png`}
-                          color="primary"
-                        >
-                          <DownloadIcon />
-                        </IconButton>
-                      </Tooltip>
+                <CardContent>
+                  <Typography
+                    sx={{ fontSize: "16px" }}
+                    fontWeight="bold"
+                    mb={2}
+                  >
+                    Dealer Information
+                  </Typography>
+                  <Divider sx={{ my: 1 }} />
+                  <Typography sx={{ fontSize: "14px" }}>
+                    <strong>Order ID: </strong>
+                    {orderDetails?.order_id}
+                  </Typography>
+                  <Typography sx={{ fontSize: "14px" }}>
+                    <strong>Buyer Name:: </strong>
+                    {orderDetails?.name}
+                  </Typography>
+                  <Typography sx={{ fontSize: "14px" }}>
+                    <strong>Email: </strong>
+                    {orderDetails?.email}
+                  </Typography>
+                  <Typography sx={{ fontSize: "14px" }}>
+                    <strong>Mobile: </strong>
+                    {orderDetails?.mobile_number}
+                  </Typography>
+                  <Typography sx={{ fontSize: "14px" }}>
+                    <strong>Order Date: </strong>
+                    {new Date(orderDetails?.placed_on).toLocaleString()}
+                  </Typography>
+                  <Typography sx={{ fontSize: "14px" }}>
+                    <strong>Total Items: </strong>
+                    {orderDetails?.total_items}
+                  </Typography>
+                  <Typography sx={{ fontSize: "14px" }}>
+                    <strong>Order Value: </strong>
+                    {orderDetails?.currency}
+                    {orderDetails?.total_amount}
+                  </Typography>
+                  <Typography sx={{ fontSize: "14px" }}>
+                    <strong>Delivery Status: </strong>
+                    {orderDetails?.delivery_status}
+                  </Typography>
+                  <Typography sx={{ fontSize: "14px" }}>
+                    <strong>Payment Status: </strong>
+                    {orderDetails?.payment_status}
+                  </Typography>
+                  <Typography sx={{ fontSize: "14px" }}>
+                    <strong>Fulfilled Status: </strong>
+                    {orderDetails?.fulfilled_status}
+                  </Typography>
+                </CardContent>
+              </Card>
+            </Grid>
 
-                      {/* Close Icon */}
-                      <IconButton onClick={handleClose}>
-                        <CloseIcon />
-                      </IconButton>
-                    </Box>
+            {/*  Transaction History */}
+            <Grid item xs={12} sm={6}>
+              <Card
+                sx={{
+                  height: "350px",
+                  overflowY: "auto", // Default to auto
+                  ...(350 > 350 && { overflowY: "scroll" }), // Example logic, replace 350 > 350 with actual condition
+                  "&::-webkit-scrollbar": {
+                    width: "3px", // Scrollbar width
+                  },
+                  "&::-webkit-scrollbar-thumb": {
+                    backgroundColor: "#888", // Thumb color
+                    borderRadius: "10px", // Rounded scrollbar thumb
+                  },
+                  "&::-webkit-scrollbar-thumb:hover": {
+                    backgroundColor: "#555", // Hover effect
+                  },
+                }}
+              >
+                <CardContent>
+                  <Typography
+                    variant="h6"
+                    fontWeight="bold"
+                    sx={{ fontSize: "16px" }}
+                    mb={2}
+                  >
+                    Transaction History
+                  </Typography>
+                  <Divider sx={{ my: 1 }} />
+                  <List sx={{ p: 0 }}>
+                    {orderDetails?.transaction_list?.length > 0 ? (
+                      orderDetails.transaction_list.map(
+                        (transaction, index) => (
+                          <ListItem key={index} sx={{ p: 0, mb: 2 }}>
+                            <Box sx={{ width: "100%" }}>
+                              <Typography
+                                sx={{ fontSize: "14px" }}
+                              >{`Transaction ${index + 1}`}</Typography>
+                              <Typography sx={{ fontSize: "14px" }}>
+                                <strong>Payment Date: </strong>
+                                {new Date(
+                                  transaction.transaction_date
+                                ).toLocaleString()}
+                              </Typography>
+                              <Typography sx={{ fontSize: "14px" }}>
+                                <strong>Status: </strong>
+                                {transaction.status}
+                              </Typography>
+                              <Typography sx={{ fontSize: "14px" }}>
+                                <strong>Payment Reviewed Date: </strong>
+                                {new Date(
+                                  transaction.updated_date
+                                ).toLocaleString()}
+                              </Typography>
+                              <Typography sx={{ fontSize: "14px" }}>
+                                <strong>Payment Proof: </strong>
+                                <div>
+                                  <Tooltip title="Click to Preview" arrow>
+                                    <img
+                                      src={`data:image/png;base64,${transaction.payment_proof}`}
+                                      alt="Payment Proof"
+                                      className="thumbnail"
+                                      style={{
+                                        width: 50,
+                                        height: 50,
+                                        cursor: "pointer",
+                                        objectFit: "contain",
+                                        border: "1px solid lightgray",
+                                        borderRadius: "5px",
+                                      }}
+                                      onClick={() =>
+                                        handlePreview(
+                                          `data:image/png;base64,${transaction.payment_proof}`
+                                        )
+                                      }
+                                    />
+                                  </Tooltip>
+                                </div>
+                              </Typography>
+                            </Box>
+                          </ListItem>
+                        )
+                      )
+                    ) : (
+                      <ListItem>
+                        <ListItemText primary="No Data Found" />
+                      </ListItem>
+                    )}
+                  </List>
+                </CardContent>
+              </Card>
 
-                    <Box
-                      sx={{
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                      }}
-                    >
-                      <img
-                        src={previewImage}
-                        alt="Preview"
-                        style={{
-                          maxWidth: "100%",
-                          maxHeight: "80vh",
-                          marginBottom: 16,
-                        }}
-                      />
-                    </Box>
-                  </Box>
-                )}
-              </Box>
-            </Modal>
-          </Grid>
-        </Grid>
-      </Box>
+              {/* Modal for Image Preview */}
+              <Modal open={isModalOpen} onClose={handleClose}>
+                <Box
+                  sx={{
+                    backgroundColor: "white",
+                    p: 2,
+                    m: 2,
+                    borderRadius: "5px",
+                    height: "80vh",
+                    width: "80vh",
+                    position: "absolute",
+                    top: "50%",
+                    left: "50%",
+                    transform: "translate(-50%, -50%)",
 
-      <Box
-        display="flex"
-        alignItems="center"
-        gap={12}
-        flexWrap="wrap"
-        mb={3}
-        mt={3}
-      >
-        <Typography variant="body2">
-          Paid on:{" "}
-          {orderDetails?.paid_on
-            ? new Date(orderDetails?.paid_on).toLocaleString()
-            : "Not Paid"}
-        </Typography>
-        <Typography variant="body2">
-          Placed on:{" "}
-          {orderDetails?.placed_on
-            ? new Date(orderDetails?.placed_on).toLocaleString()
-            : "Not Available"}
-        </Typography>
-        <Typography variant="body2">
-          Updated:{" "}
-          {orderDetails?.updated
-            ? new Date(orderDetails?.updated).toLocaleString()
-            : "Not Available"}
-        </Typography>
-      </Box>
-
-      <Box sx={{ marginTop: "20px" }}>
-        <Card>
-          <CardContent>
-            <Typography sx={{ fontSize: "16px" }} fontWeight="bold">
-              Billing Address
-            </Typography>
-            <Typography sx={{ fontSize: "14px" }}>
-              {orderDetails?.billing_address.street},{" "}
-              {orderDetails?.billing_address.city},{" "}
-              {orderDetails?.billing_address.state},{" "}
-              {orderDetails?.billing_address.zipCode},{" "}
-              {orderDetails?.billing_address.country}
-            </Typography>
-            <Divider sx={{ my: 1 }} />
-            <Typography sx={{ fontSize: "16px" }} fontWeight="bold">
-              Shipping Address
-            </Typography>
-            <Typography sx={{ fontSize: "14px" }}>
-              {orderDetails?.shipping_address.shipping_address.street},{" "}
-              {orderDetails?.shipping_address.shipping_address.city},{" "}
-              {orderDetails?.shipping_address.shipping_address.state},{" "}
-              {orderDetails?.shipping_address.shipping_address.zipCode},{" "}
-              {orderDetails?.shipping_address.shipping_address.country}
-            </Typography>
-          </CardContent>
-        </Card>
-      </Box>
-
-      <Box sx={{ marginTop: "52px" }}>
-        <Typography variant="h6" fontWeight="bold" mb={2}>
-          Order Summary
-        </Typography>
-
-        <Paper variant="outlined">
-          {/* Populate order items if available */}
-          {orderDetails?.product_list.length > 0 ? (
-            <Table>
-              <TableHead>
-                <TableRow>
-                  <TableCell>Product Thumbnail</TableCell>
-                  <TableCell>Product Name</TableCell>
-                  <TableCell>SKU</TableCell>
-                  <TableCell>Quantity</TableCell>
-                  <TableCell>Brand Name</TableCell>
-                  <TableCell>Price</TableCell>
-                  <TableCell>Total</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {orderDetails.product_list.map((product, index) => (
-                  <TableRow key={index}>
-                    <TableCell>
-                      <img
-                        src={product?.primary_image}
-                        alt={product?.product_name}
-                        width={50}
-                        height={50}
-                      />
-                    </TableCell>
-
-                    <Tooltip title={product.product_name} arrow>
-                      <TableCell
+                    outline: "none",
+                  }}
+                >
+                  {previewImage && (
+                    <Box>
+                      <Box
                         sx={{
-                          maxWidth: "200px",
-                          whiteSpace: "nowrap",
-                          overflow: "hidden",
-                          textOverflow: "ellipsis",
+                          display: "flex",
+                          justifyContent: "space-between",
                         }}
                       >
-                        {product?.product_name}
-                      </TableCell>
-                    </Tooltip>
-                    <TableCell>{product?.sku_number}</TableCell>
-                    <TableCell>{product?.quantity}</TableCell>
+                        {/* Download Icon */}
+                        <Tooltip title="Download Image">
+                          <IconButton
+                            component="a"
+                            href={previewImage}
+                            download={`Payment_Proof_${new Date().toISOString()}.png`}
+                            color="primary"
+                          >
+                            <DownloadIcon />
+                          </IconButton>
+                        </Tooltip>
 
-                    <TableCell>{product?.brand_name}</TableCell>
+                        {/* Close Icon */}
+                        <IconButton onClick={handleClose}>
+                          <CloseIcon />
+                        </IconButton>
+                      </Box>
+
+                      <Box
+                        sx={{
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                        }}
+                      >
+                        <img
+                          src={previewImage}
+                          alt="Preview"
+                          style={{
+                            maxWidth: "100%",
+                            maxHeight: "80vh",
+                            marginBottom: 16,
+                          }}
+                        />
+                      </Box>
+                    </Box>
+                  )}
+                </Box>
+              </Modal>
+            </Grid>
+          </Grid>
+        </Box>
+
+        <Box
+          display="flex"
+          alignItems="center"
+          gap={12}
+          flexWrap="wrap"
+          mb={3}
+          mt={3}
+        >
+          <Typography variant="body2">
+            Paid on:{" "}
+            {orderDetails?.paid_on
+              ? new Date(orderDetails?.paid_on).toLocaleString()
+              : "Not Paid"}
+          </Typography>
+          <Typography variant="body2">
+            Placed on:{" "}
+            {orderDetails?.placed_on
+              ? new Date(orderDetails?.placed_on).toLocaleString()
+              : "Not Available"}
+          </Typography>
+          <Typography variant="body2">
+            Updated:{" "}
+            {orderDetails?.updated
+              ? new Date(orderDetails?.updated).toLocaleString()
+              : "Not Available"}
+          </Typography>
+        </Box>
+
+        <Box sx={{ marginTop: "20px" }}>
+          <Card>
+            <CardContent>
+              <Typography sx={{ fontSize: "16px" }} fontWeight="bold">
+                Billing Address
+              </Typography>
+              <Typography sx={{ fontSize: "14px" }}>
+                {orderDetails?.billing_address.street},{" "}
+                {orderDetails?.billing_address.city},{" "}
+                {orderDetails?.billing_address.state},{" "}
+                {orderDetails?.billing_address.zipCode},{" "}
+                {orderDetails?.billing_address.country}
+              </Typography>
+              <Divider sx={{ my: 1 }} />
+              <Typography sx={{ fontSize: "16px" }} fontWeight="bold">
+                Shipping Address
+              </Typography>
+              <Typography sx={{ fontSize: "14px" }}>
+                {orderDetails?.shipping_address.shipping_address.street},{" "}
+                {orderDetails?.shipping_address.shipping_address.city},{" "}
+                {orderDetails?.shipping_address.shipping_address.state},{" "}
+                {orderDetails?.shipping_address.shipping_address.zipCode},{" "}
+                {orderDetails?.shipping_address.shipping_address.country}
+              </Typography>
+            </CardContent>
+          </Card>
+        </Box>
+
+        <Box sx={{ marginTop: "52px" }}>
+          <Box
+            display={"flex"}
+            justifyContent={"space-between"}
+            alignItems={"center"}
+          >
+            <Typography variant="h6" fontWeight="bold" mb={2}>
+              Order Summary
+            </Typography>
+            <Button
+              onClick={notifyBuyerForAvailableProducts}
+              variant="contained"
+              color="primary"
+              sx={{ marginRight: 2, marginBottom: 2 }}
+              disabled={
+                selectedProductIds.length === 0 ||
+                orderDetails?.fulfilled_status === "Fulfilled"
+              }
+            >
+              Order Fulfillment
+            </Button>
+          </Box>
+
+          <Paper variant="outlined">
+            {/* Populate order items if available */}
+            {orderDetails?.product_list.length > 0 ? (
+              <Table>
+                <TableHead>
+                  <TableRow>
                     <TableCell>
-                      {product?.currency}
-                      {product?.price}
+                      <Checkbox
+                        checked={
+                          selectedRows.length ===
+                            orderDetails.product_list.filter(
+                              (product) => product.product_status !== "Shipped"
+                            ).length &&
+                          orderDetails?.fulfilled_status !== "Fulfilled" // Ensure it's unchecked when "Fulfilled"
+                        }
+                        onChange={handleSelectAll}
+                        indeterminate={
+                          selectedRows.length > 0 &&
+                          selectedRows.length <
+                            orderDetails.product_list.filter(
+                              (product) => product.product_status !== "Shipped"
+                            ).length &&
+                          orderDetails?.fulfilled_status !== "Fulfilled" // Ensure indeterminate is active only when not "Fulfilled"
+                        }
+                        disabled={
+                          orderDetails?.fulfilled_status === "Fulfilled"
+                        } // Disable the checkbox when "Fulfilled"
+                      />
                     </TableCell>
-                    <TableCell>
-                      {product?.currency}
-                      {product?.total_price}
-                    </TableCell>
+                    <TableCell>Product Thumbnail</TableCell>
+                    <TableCell>Product Name</TableCell>
+                    <TableCell>SKU</TableCell>
+                    <TableCell>Quantity</TableCell>
+                    <TableCell>Brand Name</TableCell>
+                    <TableCell>Price</TableCell>
+                    <TableCell>Total</TableCell>
+                    <TableCell>Product status</TableCell>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          ) : (
-            <Typography variant="body1">No products in this order.</Typography>
-          )}
-        </Paper>
-      </Box>
+                </TableHead>
+                <TableBody>
+                  {orderDetails.product_list.map((product, index) => (
+                    <TableRow key={index} selected={isRowSelected(index)}>
+                      <TableCell>
+                        <Checkbox
+                          checked={isRowSelected(index)}
+                          onChange={() => handleRowSelect(index)}
+                          disabled={product.product_status === "Shipped"}
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <img
+                          src={product?.primary_image}
+                          alt={product?.product_name}
+                          width={50}
+                          height={50}
+                        />
+                      </TableCell>
+                      <Tooltip title={product.product_name} arrow>
+                        <TableCell
+                          sx={{
+                            maxWidth: "200px",
+                            whiteSpace: "nowrap",
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
+                          }}
+                        >
+                          {product?.product_name}
+                        </TableCell>
+                      </Tooltip>
+                      <TableCell>{product?.sku_number}</TableCell>
+                      <TableCell>{product?.quantity}</TableCell>
+                      <TableCell>{product?.brand_name}</TableCell>
+                      <TableCell>
+                        {product?.currency}
+                        {product?.price}
+                      </TableCell>
+                      <TableCell>
+                        {product?.currency}
+                        {product?.total_price}
+                      </TableCell>
+                      <TableCell>{product?.product_status}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            ) : (
+              <Typography variant="body1">
+                No products in this order.
+              </Typography>
+            )}
+          </Paper>
+        </Box>
 
-      <Box mt={2} mb={2}>
-        <Typography class="para" variant="body1">
-          Free Shipping
-        </Typography>
-        <Typography class="para">
-          Subtotal: $ <span>{orderDetails?.total_amount}</span>
-        </Typography>
-        <Typography class="para" variant="body1">
-          Shipping Handling: $0.00
-        </Typography>
-        <Typography class="para" variant="body1">
-          Tax Amount: 10%
-        </Typography>
-        <Typography variant="body1" fontWeight="bold">
-          Total: ${(orderDetails?.total_amount * 1.1).toFixed(2)}
-        </Typography>
-      </Box>
-</div>
+        <Box mt={2} mb={2}>
+          <Typography class="para" variant="body1">
+            Free Shipping
+          </Typography>
+          <Typography class="para">
+            Subtotal: $ <span>{orderDetails?.total_amount}</span>
+          </Typography>
+          <Typography class="para" variant="body1">
+            Shipping Handling: $0.00
+          </Typography>
+          <Typography class="para" variant="body1">
+            Tax Amount: 10%
+          </Typography>
+          <Typography variant="body1" fontWeight="bold">
+            Total: ${(orderDetails?.total_amount * 1.1).toFixed(2)}
+          </Typography>
+        </Box>
+      </div>
     </Box>
   );
 };

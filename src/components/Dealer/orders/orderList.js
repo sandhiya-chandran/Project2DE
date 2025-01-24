@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { useLocation } from 'react-router-dom';
+import { useLocation } from "react-router-dom";
 import { Box, Button, Table, TableBody,MenuItem, Menu,TableCell, TableContainer, TableHead, TableRow, Paper, TextField ,IconButton, InputAdornment,} from "@mui/material";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
@@ -27,46 +27,26 @@ const OrderList = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  useEffect(() => {
-      // Get the query parameters from the URL
-      const searchParams = new URLSearchParams(location.search);
-      const filter = searchParams.get('filter');
-  
-      // Set the filter state based on the query parameter in the URL
-      if (filter === 'Pending') {
-        setPaymentStatus('Pending');
-      }else if (filter === 'yes') {
-        setis_reorder('Yes');
-      }
-    }, [location.search]); // Trigger effect whenever the URL changes
-  
-
-  // Function to fetch the order list
   const fetchOrderList = async (key, direction) => {
-    console.log('pass',key, direction)
+    console.log('pass', key, direction);
     try {
-      
       const formattedDate = selectedDate ? selectedDate.format("YYYY-MM-DD") : null;
-  
       const sort_by_value = direction === 'asc' ? 1 : direction === 'desc' ? -1 : '';
 
       const response = await axios.post(
         `${process.env.REACT_APP_IP}obtainOrderListForDealer/`,
         {
           user_id: user?.id, // Safely access user ID
-          // search_query: searchTerm || "", // Handle undefined search term
           sort_by: key || "", // Provide fallback for sort key
           sort_by_value: sort_by_value, // Determine sort direction
-          // dealer_list: selectedDealerIds || [], // Default to an empty array
           delivery_status,  // Use state directly
           fulfilled_status, // Use state directly
           payment_status,
           is_reorder,   // Use state directly
           search_by_date: formattedDate,
-      
         }
       );
-  
+
       // Check if the response contains an array of orders
       if (Array.isArray(response?.data?.data)) {
         setOrders(response.data.data); // Update state with the fetched orders
@@ -77,13 +57,29 @@ const OrderList = () => {
       console.error("Error fetching order list:", error);
     }
   };
-  
 
   useEffect(() => {
-    fetchOrderList(sortConfig.key, sortConfig.direction); 
+    const searchParams = new URLSearchParams(location.search);
+    const filter = searchParams.get('filter');
+
+    // Apply the filter based on the query parameter
+    if (filter === 'pending') {
+      setPaymentStatus('Pending');
+      setDeliveryStatus('all');
+      setFulfilledStatus('all');
+      setis_reorder('all');
+    } else if (filter === 'reorder') {
+      setis_reorder('Yes');
+      setDeliveryStatus('all');
+      setFulfilledStatus('all');
+      setPaymentStatus('all');
+    }
+
+    fetchOrderList(sortConfig.key, sortConfig.direction);
   }, [
+    location.search,
     user?.id,
-    sortConfig,
+    // sortConfig,
     page,
     delivery_status,
     fulfilled_status,

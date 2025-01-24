@@ -613,7 +613,7 @@ const handleTagRemove = (id) => {
                 zIndex: 9,
               }}
             >
-              <Box sx={{ maxWidth: "85vw" }}>
+              <Box sx={{ maxWidth: "83vw" }}>
                 <Box
                   sx={{
                     display: "flex",

@@ -132,11 +132,11 @@ const DashboardHome = () => {
   };
 
   const handlePendingClick = () => {
-    navigate(`/dealer/orders?filter=Pending`);
+    navigate(`/dealer/orders?filter=pending`);
   };
-
+  
   const handleReorderClick = () => {
-    navigate(`/dealer/orders?filter=yes`);
+    navigate(`/dealer/orders?filter=reorder`);
   };
 
   const handleTotalOrdersClick = () => {
