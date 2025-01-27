@@ -76,6 +76,7 @@ const ProductList = ({ fetchCartCount }) => {
   const [priceRange, setPriceRange] = useState({ price_from: 0, price_to: '' });
   const [selectedBrandNames, setSelectedBrandNames] = useState([]); // For Tags
   const [noProductsFound, setNoProductsFound] = useState(false); // No products found state
+  const [priceClearFunction, setPriceClearFunction] = useState(null);
 
 
   const handlePriceChange = (newRange) => {
@@ -309,6 +310,11 @@ const handleTagRemove = (id) => {
   }, [searchQuery, sortByValue]);
 
   const handleIndustryChange = (event) => {
+
+    if (priceClearFunction) {
+      priceClearFunction(); // Call the PriceClear function from the child component
+    }
+
     setValue(-1);
     const selectedIndustryId = event.target.value;
     const selectedIndustry = industryList.find(
@@ -317,10 +323,17 @@ const handleTagRemove = (id) => {
     setIndustry(selectedIndustry);
     setSelectedCategoryId(null);
     setSelectedBrandIds([]); 
-      setSelectedBrandNames([]);
+    setSelectedBrandNames([]);
+    setPriceRange({ minPrice: "", maxPrice: "" });
   };
 
   const handleChange = (event, newValue) => {
+
+    if (priceClearFunction) {
+      priceClearFunction(); // Call the PriceClear function from the child component
+    }
+
+    
     setSearchQuery("");
     setValue(newValue); // Update the active tab index
     if (categories[newValue]) {
@@ -334,6 +347,7 @@ const handleTagRemove = (id) => {
       setCategory(selectedCategoryItem);
       setSelectedBrandIds([]);
       setSelectedBrandNames([]);
+      setPriceRange({ minPrice: "", maxPrice: "" });
       console.log("Selected Category ID:", categoryId); // Log the ID to the console
     }
   };
@@ -596,7 +610,8 @@ const handleTagRemove = (id) => {
               selectedBrandsProp={selectedBrandIds}
             />
 
-           <PriceRangeFilter onPriceChange={handlePriceChange} />
+           <PriceRangeFilter onPriceChange={handlePriceChange} 
+            PriceClear={(func) => setPriceClearFunction(() => func)}/>
 
            {/* <ProductList price_from={priceRange.price_from} price_to={priceRange.price_to} /> */}
 

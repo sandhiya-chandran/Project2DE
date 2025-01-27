@@ -3,45 +3,48 @@ import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { Box, Slider, TextField, Typography } from '@mui/material';
 
-const PriceRangeFilter = ({ onPriceChange }) => {
+const PriceRangeFilter = ({ onPriceChange , PriceClear }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [priceRange, setPriceRange] = useState({ price_from: 0, price_to: '' });
   const [maxPrice, setMaxPrice] = useState(0); // State to hold the maximum price
   const [currency, setCurrency] = useState();
 
-  useEffect(() => {
-    const MaxPrice = async () => {
-      setLoading(true);
-      setError(null);
-      try {
-        const userData = localStorage.getItem("user");
-        console.log("userData", userData);
-        let manufactureUnitId = "";
-        let role_name = "";
 
-        if (userData) {
-          const data = JSON.parse(userData);
-          manufactureUnitId = data.manufacture_unit_id;
-          role_name = data.role_name;
-        }
+  const MaxPrice = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const userData = localStorage.getItem("user");
+      console.log("userData", userData);
+      let manufactureUnitId = "";
+      let role_name = "";
 
-        const response = await axios.get(
-          `${process.env.REACT_APP_IP}get_highest_priced_product/?manufacture_unit_id=${manufactureUnitId}&role_name=${role_name}`
-        );
-
-        const responseData = response.data?.data || {};
-        setMaxPrice(responseData.price || 1000); // Set the maximum price from the response
-        setPriceRange({ price_from: 0, price_to: responseData.price }); // Update the price range
-        setCurrency(responseData.currency);
-      
-      } catch (err) {
-        console.error("API Error:", err);
-        setError("Failed to load brands. Please try again.");
-      } finally {
-        setLoading(false);
+      if (userData) {
+        const data = JSON.parse(userData);
+        manufactureUnitId = data.manufacture_unit_id;
+        role_name = data.role_name;
       }
-    };
+
+      const response = await axios.get(
+        `${process.env.REACT_APP_IP}get_highest_priced_product/?manufacture_unit_id=${manufactureUnitId}&role_name=${role_name}`
+      );
+
+      const responseData = response.data?.data || {};
+      setMaxPrice(responseData.price || 1000); // Set the maximum price from the response
+      setPriceRange({ price_from: 0, price_to: responseData.price }); // Update the price range
+      setCurrency(responseData.currency);
+    
+    } catch (err) {
+      console.error("API Error:", err);
+      setError("Failed to load brands. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+  
 
     MaxPrice();
   }, []);
@@ -53,6 +56,15 @@ const PriceRangeFilter = ({ onPriceChange }) => {
   const handleSliderChangeCommitted = (event, newValue) => {
     onPriceChange({ price_from: newValue[0], price_to: newValue[1] });
   };
+
+   const ClearPrice = () => {
+      setPriceRange({ price_from: 0, price_to: maxPrice }); // Reset to default range
+    };
+  
+    // Pass the clearPrice function to the parent component
+    useEffect(() => {
+      PriceClear(ClearPrice);
+    }, [PriceClear]);
 
 
   return (

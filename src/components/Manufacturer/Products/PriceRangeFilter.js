@@ -3,7 +3,7 @@ import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { Box, Slider,Button, TextField, Typography } from '@mui/material';
 
-const PriceRangeFilter = ({ onPriceChange  }) => {
+const PriceRangeFilter = ({ onPriceChange , PriceClear }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [priceRange, setPriceRange] = useState({ price_from: 0, price_to: '' });
@@ -60,11 +60,12 @@ const PriceRangeFilter = ({ onPriceChange  }) => {
     setPriceRange({ price_from: 0, price_to: maxPrice }); // Reset to default range
   };
 
-  const handleClearFilter = () => {
-    setPriceRange({ price_from: 0, price_to: maxPrice }); // Reset to default range
-    onPriceChange({ price_from: 0, price_to: maxPrice }); // Notify parent of the reset
-  };
+  // Pass the clearPrice function to the parent component
+  useEffect(() => {
+    PriceClear(ClearPrice);
+  }, [PriceClear]);
 
+  
 
   return (
     <Box sx={{
@@ -109,17 +110,6 @@ const PriceRangeFilter = ({ onPriceChange  }) => {
       <Typography variant="h6" sx={{ fontSize: "13px"}} >
         {currency}{priceRange.price_from} - {currency}{priceRange.price_to}
       </Typography>
-      <Button
-        variant="outlined"
-        onClick={handleClearFilter}
-        sx={{
-          marginTop: 2,
-          fontSize: "12px",
-          textTransform: "none",
-        }}
-      >
-        Clear Filter
-      </Button>
       </Box>
     </Box>
   );

@@ -85,6 +85,7 @@ function ProductList() {
   const [selectedBrandNames, setSelectedBrandNames] = useState([]); // For Tags
   const [priceRange, setPriceRange] = useState({ price_from: 0, price_to: '' });
   const [noProductsFound, setNoProductsFound] = useState(false); // No products found state
+  const [priceClearFunction, setPriceClearFunction] = useState(null);
 
   const userData = localStorage.getItem("user");
 
@@ -257,6 +258,11 @@ function ProductList() {
   }, []);
 
   const handleIndustryChange = (event) => {
+
+    if (priceClearFunction) {
+      priceClearFunction(); // Call the PriceClear function from the child component
+    }
+
     setValue(-1);
     const selectedIndustryId = event.target.value;
     const selectedIndustry = industryList.find(
@@ -270,6 +276,7 @@ function ProductList() {
     setSelectedChild("");
     setSelectedBrandIds([]);
     setSelectedBrandNames([]);
+    setPriceRange({ minPrice: "", maxPrice: "" });
   };
 
   const getValidationMessage = (wasPrice, price) => {
@@ -305,6 +312,10 @@ function ProductList() {
           manufactureUnitId = data.manufacture_unit_id;
         }
 
+        if (priceClearFunction) {
+          priceClearFunction(); // Call the PriceClear function from the child component
+        }
+
         // Fetch initial category list
         const categoryResponse = await axios.get(
           `${process.env.REACT_APP_IP}obtainProductCategoryList/?manufacture_unit_id=${manufactureUnitId}`
@@ -317,6 +328,7 @@ function ProductList() {
         setCategories(parentCategories);
         setSelectedBrandIds([]);
         setSelectedBrandNames([]);
+        setPriceRange({ minPrice: "", maxPrice: "" });
 
         // Fetch initial product list for all categories
         await fetchData();
@@ -329,6 +341,11 @@ function ProductList() {
   // Fetch child categories when a parent is selected
   useEffect(() => {
     const fetchChildCategories = async () => {
+
+      if (priceClearFunction) {
+        priceClearFunction(); // Call the PriceClear function from the child component
+      }
+
       if (!selectedParent) {
         setChildCategories([]); // Reset child categories if no parent selected
         return;
@@ -349,6 +366,7 @@ function ProductList() {
         setChildCategories(response.data.data || []);
         setSelectedBrandIds([]);
         setSelectedBrandNames([]);
+        setPriceRange({ minPrice: "", maxPrice: "" });
       } catch (error) {
         console.error("Error fetching child categories:", error);
       }
@@ -825,6 +843,12 @@ function ProductList() {
     // setPage(1);
   };
 
+
+  // useEffect(() => {
+  //   if (priceClearFunction) {
+  //     priceClearFunction(); // Call the PriceClear function from the child component
+  //   }
+  // }, [selectedCategory, industry]); 
   
 
   if (error) return <div>{error}</div>;
@@ -850,7 +874,8 @@ function ProductList() {
               selectedBrandsProp={selectedBrandIds}
             />
 
-            <PriceRangeFilter onPriceChange={handlePriceChange} />
+            <PriceRangeFilter onPriceChange={handlePriceChange} 
+            PriceClear={(func) => setPriceClearFunction(() => func)}  />
 
           </Box>
         </Grid>
