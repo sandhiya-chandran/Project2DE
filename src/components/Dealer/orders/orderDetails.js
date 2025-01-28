@@ -1,5 +1,7 @@
-import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from 'react-router-dom';
+import { useEffect , useState } from 'react';
+// import { useHistory } from 'react-router-dom';
+
 import {
   Card,
   CardContent,
@@ -20,13 +22,13 @@ import {
   Modal,
   IconButton,
   Tooltip,  Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle , CircularProgress
-} from "@mui/material";
-import { useLocation } from "react-router-dom";
+  } from "@mui/material";
 import axios from "axios";
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
 import DownloadIcon from "@mui/icons-material/Download";
 import CloseIcon from "@mui/icons-material/Close";
+import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 
 const getButtonStyles = (paymentStatus) => {
   if (paymentStatus === "Paid" || paymentStatus === "Completed") {
@@ -40,8 +42,12 @@ const getButtonStyles = (paymentStatus) => {
   return {};
 };
 
+
+
 const OrderDetailPage = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  // const history = useHistory();
   const [orderDetails, setOrderDetails] = useState(null);
   const [previewImage, setPreviewImage] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -52,9 +58,21 @@ const OrderDetailPage = () => {
 
   const userData = localStorage.getItem("user");
   const userId = userData ? JSON.parse(userData).manufacture_unit_id : "";
-  const location = useLocation();
   const orderId = location.state?.orderId;
 
+  useEffect(() => {
+    const handleBackButton = () => {
+      // Custom logic for when the back button is pressed
+      console.log('Back button pressed');
+    };
+
+    // Listen for history changes (back button)
+    window.addEventListener('popstate', handleBackButton);
+
+    return () => {
+      window.removeEventListener('popstate', handleBackButton); // Clean up listener
+    };
+  }, []);
   const handlePreview = (image) => {
     setPreviewImage(image);
     setIsModalOpen(true);
@@ -171,7 +189,19 @@ const OrderDetailPage = () => {
 
   return (
     <div>
+      <Button
+      startIcon={<ArrowBackIcon />}
+      onClick={() => navigate(-1)}  // Use navigate(-1) instead of history.goBack()
+      variant="text"
+      sx={{ textTransform: 'capitalize', margin: "20px 20px 0px 20px", }}
+    >
+      Back to Orders
+    </Button>
+
       <Box sx={{ m: 1 }}>
+
+      
+     
         <Button
           variant="outlined"
           onClick={generateInvoice}

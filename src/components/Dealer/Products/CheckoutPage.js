@@ -18,6 +18,8 @@ import {
 
 import CloseIcon from '@mui/icons-material/Close';
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
+import soonImg from "../../assets/soon-img.png";
+
 
 function CheckoutPage({fetchCartCount}) {
   const navigate = useNavigate();
@@ -338,8 +340,20 @@ function CheckoutPage({fetchCartCount}) {
               }}>
             {cartItems.map((item,index) => (
               <Box key={index} display="flex" alignItems="center" my={2}>
+
+
                 <img
-                  src={item.primary_image}
+                  // src={item.primary_image}
+                  src={
+                    !item.primary_image ||
+                    item.primary_image?.startsWith("http://example.com") ||
+                    !(
+                      item.primary_image?.startsWith("http") ||
+                      item.primary_image?.startsWith("https")
+                    )
+                      ? soonImg
+                      : item.primary_image
+                  }
                   alt={item.name}
                   width={50}
                   height={50}

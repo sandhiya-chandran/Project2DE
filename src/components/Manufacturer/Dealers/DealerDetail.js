@@ -66,7 +66,7 @@ const DealerDetail = () => {
         sx={{ marginBottom: 2, color: "primary.main", textTransform: "capitalize" }}
         onClick={() => navigate(-1)} // Go back to the previous page
       >
-        Buyer / Buyer Details
+        Back to Buyers
       </Button>
 
       {/* Dealer Details Section */}

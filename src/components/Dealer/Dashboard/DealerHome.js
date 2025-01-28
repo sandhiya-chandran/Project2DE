@@ -52,11 +52,11 @@ const DashboardHome = () => {
   };
 
   useEffect(() => {
-    if (user && loading) {
-      // Check if user exists and avoid re-triggering the effect
+    if (user && !dashboardData) {
+      // Ensure data is only fetched once and not on every state update
       fetchDashboardData();
     }
-  }, [user, loading]);
+  }, [user, dashboardData]);  // Remove 'loading' from dependencies
 
   // Return loading state if data is not yet fetched
   if (loading || !dashboardData) {
@@ -80,6 +80,7 @@ const DashboardHome = () => {
       title: "Total Spendings",
       value: `$${dashboardData.total_spend.toFixed(2) || '0'}`,
       color: "#4caf50",
+      onClick: () => handleTotalSpendingsClick(),
     },
     {
       title: "Total Orders",
@@ -131,12 +132,17 @@ const DashboardHome = () => {
     ],
   };
 
-  const handlePendingClick = () => {
-    navigate(`/dealer/orders?filter=pending`);
+  const handleTotalSpendingsClick = () => {
+    navigate("/dealer/orders", { state: { filter: { payment_status: "Completed" } } });
   };
+
+  const handlePendingClick = () => {
+    navigate("/dealer/orders", { state: { filter: { payment_status: "Pending" } } });
+  };
+
   
   const handleReorderClick = () => {
-    navigate(`/dealer/orders?filter=reorder`);
+    navigate("/dealer/orders", { state: { filter: { is_reorder: "yes" } } });
   };
 
   const handleTotalOrdersClick = () => {

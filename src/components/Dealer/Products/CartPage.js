@@ -276,15 +276,9 @@ const CartPage = ({fetchCartCount}) => {
               >
                 Empty Cart
               </Button>
-              {/* Empty Cart Button */}
-              <Button
-                variant="outlined"
-                color="primary"
-                onClick={updateCartItemQuantities}
-              >
-                Update Quantity
-              </Button>
-              {/*  Check Out Button */}
+             
+           
+             
             </Box>
 
           </Box>
@@ -423,13 +417,19 @@ const CartPage = ({fetchCartCount}) => {
           >
             Total Amount: ${totalAmount}
           </Typography>
-
+         
           {/* Checkout Button */}
-          <Box sx={{ textAlign: "right" }}>
+          <Box sx={{ display: "flex", justifyContent: "flex-end", gap: "20px" , marginTop: "20px"}}>
+          <Button
+                variant="outlined"
+                color="primary"
+                onClick={updateCartItemQuantities}
+              >
+                Update Quantity
+              </Button>
             <Button
               variant="contained"
               color="primary"
-              style={{ marginTop: "20px" }}
               onClick={() => navigate("/dealer/checkout")}
             >
               Checkout

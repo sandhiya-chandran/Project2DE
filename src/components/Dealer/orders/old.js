@@ -27,13 +27,12 @@ const OrderList = () => {
   const [is_reorder, setis_reorder] = useState(filter?.is_reorder || "all");
   const [selectedDate, setSelectedDate] = useState(null);
   const [endDate, setEndDate] = useState(null);
-
   const [page, setPage] = useState(0);
 
   const fetchOrderList = async (key, direction) => {
     console.log('pass', key, direction);
     try {
-      const formattedStartDate = selectedDate ? selectedDate.format("YYYY-MM-DD") : null;
+      const formattedDate = selectedDate ? selectedDate.format("YYYY-MM-DD") : null;
       const formattedEndDate = endDate ? endDate.format("YYYY-MM-DD") : null;
       const sort_by_value = direction === 'asc' ? 1 : direction === 'desc' ? -1 : '';
 
@@ -48,8 +47,8 @@ const OrderList = () => {
           payment_status,
           is_reorder,   // Use state directly
           // search_by_date: formattedDate,
-          start_date: formattedStartDate,
-         end_date: formattedEndDate,
+          start_date: formattedDate,
+          end_date : formattedEndDate,
         }
       );
 
@@ -73,8 +72,7 @@ const OrderList = () => {
     fulfilled_status,
     payment_status,
     is_reorder,
-    selectedDate,
-    endDate,
+    selectedDate
   ]);
 
 
@@ -162,55 +160,46 @@ const OrderList = () => {
          zIndex:9,
       }}> 
 
-<LocalizationProvider dateAdapter={AdapterDayjs}>
-  <Box sx={{ display: "flex", gap: 2 }}>
-    <DemoContainer components={["DatePicker"]}>
-      <DatePicker
-        label="Start Date"
-        value={selectedDate}
-        onChange={(newDate) => setSelectedDate(newDate)}
-        renderInput={(params) => (
-          <TextField
-            {...params}
-            size="small"
-            InputLabelProps={{ shrink: false }}
-            sx={{
-              width: 200,
-              fontSize: "0.875rem",
-              height: 40,
-            }}
-          />
-        )}
-      />
-    </DemoContainer>
-
-    <DemoContainer components={["DatePicker"]}>
-      <DatePicker
-        label="End Date"
-        value={endDate}
-        onChange={(newDate) => setEndDate(newDate)}
-        renderInput={(params) => (
-          <TextField
-            {...params}
-            size="small"
-            InputLabelProps={{ shrink: false }}
-            sx={{
-              width: 200,
-              fontSize: "0.875rem",
-              height: 40,
-            }}
-          />
-        )}
-      />
-    </DemoContainer>
-
-    {/* Button to clear the date filter */}
-    <IconButton onClick={() => { setSelectedDate(null); setEndDate(null); }} size="small">
-      <ClearIcon />
-    </IconButton>
-  </Box>
-</LocalizationProvider>
-
+       <LocalizationProvider dateAdapter={AdapterDayjs}>
+                  <DemoContainer components={["DatePicker"]}>
+                    <DatePicker
+                      value={selectedDate}
+                      onChange={(newDate) => {
+                        console.log("Selected Date after change:", newDate);
+                        setSelectedDate(newDate);
+                      }}
+                      renderInput={(params) => (
+                        <TextField
+                          {...params}
+                          size="small"
+                          sx={{
+                            width: 200,
+                            fontSize: "0.875rem",
+                            height: 40,
+                            "& .MuiInputBase-root": {
+                              height: 40,
+                            },
+                            "& .MuiOutlinedInput-root": {
+                              padding: "0 14px", // Adjust this padding as needed
+                            },
+                            "& .MuiInputBase-input": {
+                              padding: "0px", // Remove padding from the input itself
+                            },
+                          }}
+                          componentsProps={{
+                            actionBar: {
+                              sx: {
+                                fontSize: "1rem", // Adjust calendar icon size here
+                              },
+                            },
+                          }}
+                        />
+                      )}
+                    />
+                  </DemoContainer>
+      
+             
+      </LocalizationProvider>
                 
          <TextField
           placeholder="Search Orders"

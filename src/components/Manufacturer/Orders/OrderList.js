@@ -71,6 +71,7 @@ const OrderList = () => {
   const location = useLocation();
   const user = JSON.parse(localStorage.getItem("user"));
   const navigate = useNavigate();
+  const filter = location.state?.filter || {};
   const [orders, setOrders] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [page, setPage] = useState(0);
@@ -80,8 +81,8 @@ const OrderList = () => {
   const [sortConfig, setSortConfig] = useState({ key: "", direction: "asc" });
   const [delivery_status, setDeliveryStatus] = useState("all");
   const [fulfilled_status, setFulfilledStatus] = useState("all");
-  const [payment_status, setPaymentStatus] = useState("all");
-  const [is_reorder, setis_reorder] = useState("all");
+  const [payment_status, setPaymentStatus] = useState(filter?.payment_status || "all");
+  const [is_reorder, setis_reorder] = useState(filter?.is_reorder || "all");
   const [exportAnchorEl, setExportAnchorEl] = useState(null);
   const [dealers, setDealers] = useState([]);
   const [dealerAnchorEl, setDealerAnchorEl] = useState(null);
@@ -484,7 +485,7 @@ const OrderList = () => {
         <TableContainer component={Paper} sx={{ marginTop: 2 }}>
           <Table>
             <TableHead>
-              <TableRow>
+              <TableRow >
                 <TableCell align="center">
                   OrderId
                   <IconButton onClick={(e) => handleOpenMenu(e, "order_id")}>
@@ -571,6 +572,11 @@ const OrderList = () => {
                       key={order._id}
                       onClick={() => handleRowClick(order._id)}
                       style={{ cursor: "pointer" }}
+                      sx={{
+                        '&:hover': {
+                          backgroundColor: '#6fb6fc38', // Customize your hover color here
+                        },
+                      }}
                     >
                       <TableCell align="center">{order.order_id}</TableCell>
                       <TableCell align="center">{order.dealer_name}</TableCell>

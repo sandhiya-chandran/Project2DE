@@ -25,6 +25,7 @@ import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import soonImg from "../../assets/soon-img.png";
 import InputAdornment from "@mui/material/InputAdornment";
 import IconButton from "@mui/material/IconButton";
+import { ArrowBack, ArrowForward } from "@mui/icons-material";
 
 import {
   Visibility,
@@ -41,9 +42,11 @@ function ProductDetail() {
   const [RelatedProducts, setRelatedProducts] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [mainImage, setMainImage] = useState("");
+  // const [mainImage, setMainImage] = useState("");
   const [isOpen, setIsOpen] = useState(false); // State for Modal
   const [currentProduct, setCurrentProduct] = useState(product); // Local state for product
+  const [mainImage, setMainImage] = useState(product?.images?.[0] || soonImg);
+  const [currentIndex, setCurrentIndex] = useState(0);
 
   const { searchQuery } = location.state || {};
   console.log("searchQuery-Details:", searchQuery);
@@ -123,7 +126,45 @@ function ProductDetail() {
     event.preventDefault(); // Prevent default behavior (e.g., focusing on the input field)
   };
 
-  const handleImageClick = (image) => setMainImage(image);
+  // Function to handle image click
+  const handleImageClick = (image, index) => {
+    setMainImage(image);
+    setCurrentIndex(index);
+  };
+
+  // Function to go to the previous image
+  const handlePrev = () => {
+    const newIndex =
+      (currentIndex - 1 + product?.images?.length) % product?.images?.length;
+    setMainImage(product?.images?.[newIndex] || soonImg);
+    setCurrentIndex(newIndex);
+  };
+
+  // Function to go to the next image
+  const handleNext = () => {
+    const newIndex = (currentIndex + 1) % product?.images?.length;
+    setMainImage(product?.images?.[newIndex] || soonImg);
+    setCurrentIndex(newIndex);
+  };
+
+  // Adding keyboard navigation for arrow keys
+  useEffect(() => {
+    const handleKeydown = (event) => {
+      if (event.key === "ArrowLeft") {
+        handlePrev();
+      } else if (event.key === "ArrowRight") {
+        handleNext();
+      }
+    };
+
+    window.addEventListener("keydown", handleKeydown);
+
+    // Cleanup event listener
+    return () => {
+      window.removeEventListener("keydown", handleKeydown);
+    };
+  }, [currentIndex, product?.images]);
+
 
   const handleProductClick = (productId) => {
     const url = `/manufacturer/products/details/${productId}?searchQuery=${encodeURIComponent(searchQuery)}`;
@@ -151,7 +192,20 @@ function ProductDetail() {
 
       <Grid container spacing={4}>
         <Grid item xs={12} md={5}>
-          <Card>
+          <Card sx={{ position: "relative" }}>
+          <IconButton
+          onClick={handlePrev}
+          sx={{
+            position: "absolute",
+            top: "50%",
+            left: 10,
+            transform: "translateY(-50%)",
+            zIndex: 1,
+            backgroundColor: "rgb(255, 255, 255)",
+          }}
+        >
+          <ArrowBack />
+        </IconButton>
             <CardMedia
               component="img"
               sx={{ objectFit: "contain" }}
@@ -166,6 +220,19 @@ function ProductDetail() {
               }
               alt={product?.product_name}
             />
+             <IconButton
+          onClick={handleNext}
+          sx={{
+            position: "absolute",
+            top: "50%",
+            right: 10,
+            transform: "translateY(-50%)",
+            zIndex: 1,
+            backgroundColor: "rgb(255, 255, 255)",
+          }}
+        >
+          <ArrowForward />
+        </IconButton>
           </Card>
 
           <Box display="flex" gap={1} mt={2} flexWrap={"wrap"}>
@@ -185,9 +252,9 @@ function ProductDetail() {
                   width: "50px",
                   height: "50px",
                   cursor: "pointer",
-                  border: "1px solid #ccc",
+                  border: index === currentIndex ? "2px solid blue" : "1px solid #ccc",
                 }}
-                onClick={() => handleImageClick(image)}
+                onClick={() => handleImageClick(image, index)}
               />
             ))}
           </Box>
@@ -339,7 +406,7 @@ function ProductDetail() {
       </Grid>
 
       <Grid container spacing={4} style={{ marginTop: "16px" }}>
-        <Grid item xs={12} md={6}>
+        <Grid item xs={12} md={8}>
           <Box sx={{ marginY: "50px" }}>
             <Typography variant="h5" color="textSecondary">
               Product Information
@@ -457,19 +524,60 @@ function ProductDetail() {
             </Box>
           </Box>
         </Grid>
-        <Grid item xs={12} md={6} direction="column">
+      
+      </Grid>
+
+      {/* From The Manufacturer */}
+      <Box sx={{ marginY: "20px" }}>
+        <Typography variant="h6" color="textSecondary">
+          From The Manufacturer
+        </Typography>
+        <Box
+          sx={{
+            display: "flex",
+            justifyContent: "flex-start",
+            marginTop: "10px",
+          }}
+        >
+          {product.from_the_manufacture ? (
+            <img
+              src={product.from_the_manufacture}
+              alt="Manufacturer"
+              style={{ width: "100%", height: "auto" }}
+            />
+          ) : (
+            <Typography
+              variant="p"
+              color="textSecondary"
+              sx={{ textAlign: "left" }}
+            >
+              Image will get uploaded soon
+            </Typography>
+          )}
+        </Box>
+      </Box>
+
+      <Grid container spacing={4} style={{ marginTop: "16px" }}>
+      
+        <Grid item xs={12} md={12} direction="column">
           <Box sx={{ p: 0 }}>
             <Typography variant="h5" color="textSecondary">
               Related Products
             </Typography>
           </Box>
-          <Box sx={{ marginTop: "10px" }}>
+          <Box sx={{ display: "flex", flexWrap: "wrap", gap: "10px", mt: 2 }}>
             {RelatedProducts.map((product) => (
               <Grid item key={product.id}>
                 <Card
                   onClick={() => handleProductClick(product.id)}
                   elevation={2}
-                  sx={{ display: "flex", p: 1, mb: 2, cursor: "pointer" }}
+                  sx={{
+                    width: "250px",
+                    minHeight: "320px",
+                    p: 1,
+                    mb: 2,
+                    cursor: "pointer",
+                  }}
                 >
                   {/* Product Image */}
 
@@ -498,14 +606,26 @@ function ProductDetail() {
                     sx={{ flex: 1, p: 0, pb: 0 }}
                     style={{ paddingBottom: 0 }}
                   >
-                    <Typography variant="body2" fontWeight="bold">
-                      {product.name}{" "}
-                    </Typography>
+                     <Tooltip title={product.name} arrow>
+                                            <Box
+                                              sx={{
+                                                display: "-webkit-box",
+                                                overflow: "hidden",
+                                                WebkitBoxOrient: "vertical",
+                                                WebkitLineClamp: 3,
+                                                textOverflow: "ellipsis",
+                                              }}
+                                            >
+                                              <Typography variant="body2" fontWeight="bold">
+                                                {product.name}
+                                              </Typography>
+                                            </Box>
+                                          </Tooltip>
                     <Box
                       sx={{
-                        display: "flex",
-                        columnGap: "10px",
-                        flexWrap: "wrap",
+                        // display: "flex",
+                        // columnGap: "10px",
+                        // flexWrap: "wrap",
                         margin: "5px 0px",
                       }}
                     >
@@ -548,36 +668,6 @@ function ProductDetail() {
           </Box>
         </Grid>
       </Grid>
-
-      {/* From The Manufacturer */}
-      <Box sx={{ marginY: "20px" }}>
-        <Typography variant="h6" color="textSecondary">
-          From The Manufacturer
-        </Typography>
-        <Box
-          sx={{
-            display: "flex",
-            justifyContent: "flex-start",
-            marginTop: "10px",
-          }}
-        >
-          {product.from_the_manufacture ? (
-            <img
-              src={product.from_the_manufacture}
-              alt="Manufacturer"
-              style={{ width: "100%", height: "auto" }}
-            />
-          ) : (
-            <Typography
-              variant="p"
-              color="textSecondary"
-              sx={{ textAlign: "left" }}
-            >
-              Image will get uploaded soon
-            </Typography>
-          )}
-        </Box>
-      </Box>
     </Box>
   );
 }

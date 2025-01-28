@@ -283,6 +283,11 @@ function DealerList() {
                         key={dealer.id}
                         onClick={() => handleRowClick(dealer.id)}
                         style={{ cursor: "pointer" }}
+                        sx={{
+                          '&:hover': {
+                            backgroundColor: '#6fb6fc38', // Customize your hover color here
+                          },
+                        }}
                       >
                         <TableCell>{dealer.username}</TableCell>
                         <TableCell>{dealer.email}</TableCell>

@@ -23,8 +23,10 @@ import {
   Tooltip,
   Breadcrumbs,
   Link,
+  IconButton,
 } from "@mui/material";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
+import { ArrowBack, ArrowForward } from "@mui/icons-material";
 
 import soonImg from "../../assets/soon-img.png";
 
@@ -36,10 +38,12 @@ const ProductDetail = ({ fetchCartCount }) => {
   const [RelatedProducts, setRelatedProducts] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [mainImage, setMainImage] = useState("");
+  // const [mainImage, setMainImage] = useState("");
   const [cartItems, setCartItems] = useState([]);
   const [quantity, setQuantity] = useState(1);
   const { industry, category } = location.state || {};
+  const [mainImage, setMainImage] = useState(product?.images?.[0] || soonImg);
+  const [currentIndex, setCurrentIndex] = useState(0);
 
   //   const { industry, category } = location.state || {};
   // console.log("Industry from state:", industry);
@@ -51,32 +55,28 @@ const ProductDetail = ({ fetchCartCount }) => {
   useEffect(() => {
     const fetchProduct = async () => {
       try {
-
         const response = await axios.get(
           `${process.env.REACT_APP_IP}obtainProductDetails/?product_id=${id}`
         );
-        
+
         const data = response.data.data || {};
         setProduct(data);
         setMainImage(data.logo || "");
 
         const userData = localStorage.getItem("user");
 
-          let manufactureUnitId = "";
+        let manufactureUnitId = "";
 
-          if (userData) {
-            const data = JSON.parse(userData);
-            manufactureUnitId = data.manufacture_unit_id;
-          }
-
-
+        if (userData) {
+          const data = JSON.parse(userData);
+          manufactureUnitId = data.manufacture_unit_id;
+        }
 
         const relatedResponse = await axios.get(
           `${process.env.REACT_APP_IP}get_related_products/?product_id=${id}&manufacture_unit_id=${manufactureUnitId}`
         );
         const relatedData = relatedResponse.data.data || [];
         setRelatedProducts(relatedData);
-
       } catch (err) {
         setError("Failed to load product details");
       } finally {
@@ -195,17 +195,67 @@ const ProductDetail = ({ fetchCartCount }) => {
   //   });
   // };
 
-  const handleImageClick = (image) => setMainImage(image);
+  // Function to handle image click
+  const handleImageClick = (image, index) => {
+    setMainImage(image);
+    setCurrentIndex(index);
+  };
 
+  // Function to go to the previous image
+  const handlePrev = () => {
+    const newIndex =
+      (currentIndex - 1 + product?.images?.length) % product?.images?.length;
+    setMainImage(product?.images?.[newIndex] || soonImg);
+    setCurrentIndex(newIndex);
+  };
+
+  // Function to go to the next image
+  const handleNext = () => {
+    const newIndex = (currentIndex + 1) % product?.images?.length;
+    setMainImage(product?.images?.[newIndex] || soonImg);
+    setCurrentIndex(newIndex);
+  };
+
+  // Adding keyboard navigation for arrow keys
+  useEffect(() => {
+    const handleKeydown = (event) => {
+      if (event.key === "ArrowLeft") {
+        handlePrev();
+      } else if (event.key === "ArrowRight") {
+        handleNext();
+      }
+    };
+
+    window.addEventListener("keydown", handleKeydown);
+
+    // Cleanup event listener
+    return () => {
+      window.removeEventListener("keydown", handleKeydown);
+    };
+  }, [currentIndex, product?.images]);
+ 
+ 
   const handleProductClick = (productId) => {
     const url = `/dealer/products/${productId}?searchQuery=${encodeURIComponent(searchQuery)}`;
-    const newTab = window.open(url, '_blank');
+    const newTab = window.open(url, "_blank");
     if (newTab) {
       newTab.focus();
     }
   };
-  
 
+  useEffect(() => {
+    const handleBackButton = () => {
+      // Custom logic for when the back button is pressed
+      console.log('Back button pressed');
+    };
+
+    // Listen for history changes (back button)
+    window.addEventListener('popstate', handleBackButton);
+
+    return () => {
+      window.removeEventListener('popstate', handleBackButton); // Clean up listener
+    };
+  }, []);
 
   if (loading) return <CircularProgress />;
   if (error) return <div>{error}</div>;
@@ -214,6 +264,17 @@ const ProductDetail = ({ fetchCartCount }) => {
 
   return (
     <Box sx={{ padding: 2 }}>
+
+      <Box py={2}>
+      <Button
+      startIcon={<ArrowBackIcon />}
+      onClick={() => navigate(-1)}  // Use navigate(-1) instead of history.goBack()
+      variant="text"
+      sx={{ textTransform: 'capitalize' }}
+    >
+      Back to Products
+    </Button>
+      </Box>
       {/* <Box>
         <Breadcrumbs aria-label="breadcrumb" sx={{ margin: "16px 0" }}>
           <Link
@@ -270,7 +331,20 @@ const ProductDetail = ({ fetchCartCount }) => {
 
       <Grid container spacing={4}>
         <Grid item xs={12} md={5}>
-          <Card>
+          <Card sx={{ position: "relative" }}>
+          <IconButton
+          onClick={handlePrev}
+          sx={{
+            position: "absolute",
+            top: "50%",
+            left: 10,
+            transform: "translateY(-50%)",
+            zIndex: 1,
+            backgroundColor: "rgb(255, 255, 255)",
+          }}
+        >
+          <ArrowBack />
+        </IconButton>
             <CardMedia
               component="img"
               sx={{ objectFit: "contain" }}
@@ -285,6 +359,19 @@ const ProductDetail = ({ fetchCartCount }) => {
               }
               alt={product?.product_name}
             />
+             <IconButton
+          onClick={handleNext}
+          sx={{
+            position: "absolute",
+            top: "50%",
+            right: 10,
+            transform: "translateY(-50%)",
+            zIndex: 1,
+            backgroundColor: "rgb(255, 255, 255)",
+          }}
+        >
+          <ArrowForward />
+        </IconButton>
           </Card>
 
           <Box display="flex" gap={1} mt={2} flexWrap={"wrap"}>
@@ -304,9 +391,9 @@ const ProductDetail = ({ fetchCartCount }) => {
                   width: "50px",
                   height: "50px",
                   cursor: "pointer",
-                  border: "1px solid #ccc",
+                  border: index === currentIndex ? "2px solid blue" : "1px solid #ccc",
                 }}
-                onClick={() => handleImageClick(image)}
+                onClick={() => handleImageClick(image, index)}
               />
             ))}
           </Box>
@@ -478,67 +565,15 @@ const ProductDetail = ({ fetchCartCount }) => {
       </Grid>
 
       <Grid container spacing={4} style={{ marginTop: "16px" }}>
-            {/* First Nested Grid */}
-            <Grid item xs={12} md={6}>
-            <Box sx={{ p: 0 }}>
-          <Typography variant="h5" color="textSecondary">
-            Product Information
-          </Typography>
-
-          {/* Product Info */}
-          <TableContainer sx={{ marginTop: "10px" }}>
-            <Table
-              sx={{
-                "& .MuiTableCell-root": {
-                  border: "1px solid rgba(224, 224, 224, 1)",
-                },
-              }}
-            >
-              <TableBody>
-                <TableRow>
-                  <TableCell sx={{ width: "120px", fontWeight: "bold" }}>
-                    Model Name
-                  </TableCell>
-                  <TableCell>{product.model}</TableCell>
-                </TableRow>
-                <TableRow>
-                  <TableCell sx={{ width: "120px", fontWeight: "bold" }}>
-                    Brand Name
-                  </TableCell>
-                  <TableCell>{product.brand_name}</TableCell>
-                </TableRow>
-                <TableRow>
-                  <TableCell sx={{ width: "120px", fontWeight: "bold" }}>
-                    Product Category
-                  </TableCell>
-                  <TableCell>{product.end_level_category}</TableCell>
-                </TableRow>
-                <TableRow>
-                  <TableCell sx={{ width: "120px", fontWeight: "bold" }}>
-                    Industry
-                  </TableCell>
-                  <TableCell>{product.industry_name}</TableCell>
-                </TableRow>
-                <TableRow>
-                  <TableCell sx={{ width: "120px", fontWeight: "bold" }}>
-                    Product Description
-                  </TableCell>
-                  <TableCell>{product.long_description}</TableCell>
-                </TableRow>
-              </TableBody>
-            </Table>
-          </TableContainer>
-
-          {/* Product Attributes Table */}
-          <Box sx={{ marginTop: "20px" }}>
+        {/* First Nested Grid */}
+        <Grid item xs={12} md={8}>
+          <Box sx={{ p: 0 }}>
             <Typography variant="h5" color="textSecondary">
-              Product Attributes
+              Product Information
             </Typography>
-            <TableContainer
-              sx={{
-                marginTop: "10px",
-              }}
-            >
+
+            {/* Product Info */}
+            <TableContainer sx={{ marginTop: "10px" }}>
               <Table
                 sx={{
                   "& .MuiTableCell-root": {
@@ -547,157 +582,256 @@ const ProductDetail = ({ fetchCartCount }) => {
                 }}
               >
                 <TableBody>
-                  {Object.entries(product.attributes).map(([key, value]) => (
-                    <TableRow key={key}>
-                      <TableCell sx={{ width: "250px", fontWeight: "bold" }}>
-                        {key}
-                      </TableCell>
-                      <TableCell>{value}</TableCell>
-                    </TableRow>
-                  ))}
+                  <TableRow>
+                    <TableCell sx={{ width: "120px", fontWeight: "bold" }}>
+                      Model Name
+                    </TableCell>
+                    <TableCell>{product.model}</TableCell>
+                  </TableRow>
+                  <TableRow>
+                    <TableCell sx={{ width: "120px", fontWeight: "bold" }}>
+                      Brand Name
+                    </TableCell>
+                    <TableCell>{product.brand_name}</TableCell>
+                  </TableRow>
+                  <TableRow>
+                    <TableCell sx={{ width: "120px", fontWeight: "bold" }}>
+                      Product Category
+                    </TableCell>
+                    <TableCell>{product.end_level_category}</TableCell>
+                  </TableRow>
+                  <TableRow>
+                    <TableCell sx={{ width: "120px", fontWeight: "bold" }}>
+                      Industry
+                    </TableCell>
+                    <TableCell>{product.industry_name}</TableCell>
+                  </TableRow>
+                  <TableRow>
+                    <TableCell sx={{ width: "120px", fontWeight: "bold" }}>
+                      Product Description
+                    </TableCell>
+                    <TableCell>{product.long_description}</TableCell>
+                  </TableRow>
                 </TableBody>
               </Table>
             </TableContainer>
-          </Box>
 
-          {/* Features Table */}
-          <Box sx={{ marginTop: "30px" }}>
-            <Typography sx={{ mb: 1 }} variant="h5" color="textSecondary">
-              Features
-            </Typography>
-            {product.features && product.features.length > 0 ? (
-              product.features.map((feature, index) => (
-                <ul
-                  style={{ paddingLeft: "20px", color: "rgba(0, 0, 0, 0.87)" }}
-                  key={index}
-                >
-                  <li
-                    style={{
-                      fontSize: "14px",
-                      lineHeight: 1.43,
-                      fontFamily: '"Roboto","Helvetica","Arial",sans-serif',
-                    }}
-                  >
-                    {feature}
-                  </li>
-                </ul>
-              ))
-            ) : (
-              <Typography
-                variant="p"
-                color="textSecondary"
-                sx={{ textAlign: "left" }}
+            {/* Product Attributes Table */}
+            <Box sx={{ marginTop: "20px" }}>
+              <Typography variant="h5" color="textSecondary">
+                Product Attributes
+              </Typography>
+              <TableContainer
+                sx={{
+                  marginTop: "10px",
+                }}
               >
-                No data available for features
-              </Typography>
-            )}
-          </Box>
-
-         
-        </Box>
-            </Grid>
-
-              {/* Display products vertically */}
-      <Grid item xs={12} md={6} direction="column">
-        <Box sx={{ p: 0 }}>
-        <Typography variant="h5" color="textSecondary">
-            Related Products
-          </Typography>
-        </Box>
-        <Box sx={{ marginTop: "10px" }}>
-  {RelatedProducts.length > 0 ? (
-    RelatedProducts.map((product) => (
-      <Grid item key={product.id}>
-        <Card 
-          onClick={() => handleProductClick(product.id)}
-          elevation={2} 
-          sx={{ display: 'flex', p: 1, mb: 2, cursor: 'pointer' }}
-        >
-          {/* Product Image */}
-          <CardMedia
-            component="img"
-            sx={{ width: 120, height: 120, objectFit: 'contain', mr: 2, pointerEvents: 'none' }}
-            image={
-              product.logo && product.logo.startsWith("http://example.com")
-                ? soonImg // Use `soonImg` if the URL is `http://example.com`
-                : product.logo.startsWith("http") || product.logo.startsWith("https")
-                ? product.logo // Use `product.logo` if it's a valid URL
-                : soonImg // Fallback to `soonImg` for all other cases
-            }
-            alt={product?.name}
-          />
-          {/* Product Info */}
-          <CardContent sx={{ flex: 1, p: 0, pb: 0 }}>
-            <Typography variant="body2" fontWeight="bold">
-              {product.name}
-            </Typography>
-            <Box sx={{ display: 'flex', columnGap: '10px', flexWrap: 'wrap', margin: '5px 0px' }}>
-              <Typography variant="body2" color="textSecondary">
-                SKU: {product.sku_number}
-              </Typography>
-              <Typography variant="body2" color="textSecondary">
-                MPN: {product.mpn}
-              </Typography>
-              <Typography variant="body2" color="textSecondary">
-                UPC: {product.upc_ean}
-              </Typography>
-              <Typography variant="body2" color="textSecondary">
-                MSRP: ${product.msrp}
-              </Typography>
+                <Table
+                  sx={{
+                    "& .MuiTableCell-root": {
+                      border: "1px solid rgba(224, 224, 224, 1)",
+                    },
+                  }}
+                >
+                  <TableBody>
+                    {Object.entries(product.attributes).map(([key, value]) => (
+                      <TableRow key={key}>
+                        <TableCell sx={{ width: "250px", fontWeight: "bold" }}>
+                          {key}
+                        </TableCell>
+                        <TableCell>{value}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </TableContainer>
             </Box>
-            <Box sx={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-              <Typography variant="body2" color="error" fontWeight="bold">
-                {product.currency}{product.price} ({product.discount}%)
-              </Typography>
-              <Typography variant="body2" sx={{ textDecoration: 'line-through' }}>
-                Was Price: ${product.was_price}
-              </Typography>
-            </Box>
-          </CardContent>
-        </Card>
-      </Grid>
-    ))
-  ) : (
-    <Typography variant="body2" color="textSecondary" textAlign="center">
-      No items found
-    </Typography>
-  )}
-</Box>
 
-      </Grid>
-      </Grid>
-
-      {/* From The Manufacturer */}
-      <Box sx={{ marginY: "20px" }}>
-            <Typography variant="h6" color="textSecondary">
-              From The Manufacturer
-            </Typography>
-            <Box
-              sx={{
-                display: "flex",
-                justifyContent: "flex-start",
-                marginTop: "10px",
-              }}
-            >
-              {product.from_the_manufacture ? (
-                <img
-                  src={product.from_the_manufacture}
-                  alt="Manufacturer"
-                  style={{ width: "100%", height: "auto" }}
-                />
+            {/* Features Table */}
+            <Box sx={{ marginTop: "30px" }}>
+              <Typography sx={{ mb: 1 }} variant="h5" color="textSecondary">
+                Features
+              </Typography>
+              {product.features && product.features.length > 0 ? (
+                product.features.map((feature, index) => (
+                  <ul
+                    style={{
+                      paddingLeft: "20px",
+                      color: "rgba(0, 0, 0, 0.87)",
+                    }}
+                    key={index}
+                  >
+                    <li
+                      style={{
+                        fontSize: "14px",
+                        lineHeight: 1.43,
+                        fontFamily: '"Roboto","Helvetica","Arial",sans-serif',
+                      }}
+                    >
+                      {feature}
+                    </li>
+                  </ul>
+                ))
               ) : (
                 <Typography
                   variant="p"
                   color="textSecondary"
                   sx={{ textAlign: "left" }}
                 >
-                  Image will get uploaded soon
+                  No data available for features
                 </Typography>
               )}
             </Box>
+          </Box>
+        </Grid>
+      </Grid>
+
+      {/* From The Manufacturer */}
+      <Box sx={{ marginY: "20px" }}>
+        <Typography variant="h6" color="textSecondary">
+          From The Manufacturer
+        </Typography>
+        <Box
+          sx={{
+            display: "flex",
+            justifyContent: "flex-start",
+            marginTop: "10px",
+          }}
+        >
+          {product.from_the_manufacture ? (
+            <img
+              src={product.from_the_manufacture}
+              alt="Manufacturer"
+              style={{ width: "100%", height: "auto" }}
+            />
+          ) : (
+            <Typography
+              variant="p"
+              color="textSecondary"
+              sx={{ textAlign: "left" }}
+            >
+              Image will get uploaded soon
+            </Typography>
+          )}
+        </Box>
       </Box>
 
-     
+      <Grid container spacing={4} style={{ marginTop: "16px" }}>
+        {/* Display products vertically */}
+        <Grid item xs={12} md={12} direction="column">
+          <Box sx={{ p: 0 }}>
+            <Typography variant="h5" color="textSecondary">
+              Related Products
+            </Typography>
+          </Box>
+          <Box sx={{ display: "flex", flexWrap: "wrap", gap: "10px", mt: 2 }}>
+            {RelatedProducts.length > 0 ? (
+              RelatedProducts.map((product) => (
+                <Grid item key={product.id}>
+                  <Card
+                    onClick={() => handleProductClick(product.id)}
+                    elevation={2}
+                    sx={{
+                      width: "250px",
+                      minHeight: "320px",
+                      p: 1,
+                      mb: 2,
+                      cursor: "pointer",
+                    }}
+                  >
+                    {/* Product Image */}
+                    <CardMedia
+                      component="img"
+                      sx={{
+                        width: 120,
+                        height: 120,
+                        objectFit: "contain",
+                        mr: 2,
+                        pointerEvents: "none",
+                      }}
+                      image={
+                        product.logo &&
+                        product.logo.startsWith("http://example.com")
+                          ? soonImg // Use `soonImg` if the URL is `http://example.com`
+                          : product.logo.startsWith("http") ||
+                              product.logo.startsWith("https")
+                            ? product.logo // Use `product.logo` if it's a valid URL
+                            : soonImg // Fallback to `soonImg` for all other cases
+                      }
+                      alt={product?.name}
+                    />
+                    {/* Product Info */}
+                    <CardContent sx={{ flex: 1, p: 0, pb: 0 }}>
+                      <Tooltip title={product.name} arrow>
+                        <Box
+                          sx={{
+                            display: "-webkit-box",
+                            overflow: "hidden",
+                            WebkitBoxOrient: "vertical",
+                            WebkitLineClamp: 3,
+                            textOverflow: "ellipsis",
+                          }}
+                        >
+                          <Typography variant="body2" fontWeight="bold">
+                            {product.name}
+                          </Typography>
+                        </Box>
+                      </Tooltip>
+                      <Box
+                        sx={{
+                          // display: "flex",
+                          // columnGap: "10px",
+                          // flexWrap: "wrap",
+                          margin: "5px 0px",
+                        }}
+                      >
+                        <Typography variant="body2" color="textSecondary">
+                          SKU: {product.sku_number}
+                        </Typography>
+                        <Typography variant="body2" color="textSecondary">
+                          MPN: {product.mpn}
+                        </Typography>
+                        <Typography variant="body2" color="textSecondary">
+                          UPC: {product.upc_ean}
+                        </Typography>
+                        <Typography variant="body2" color="textSecondary">
+                          MSRP: ${product.msrp}
+                        </Typography>
+                      </Box>
+                      <Box
+                        sx={{ display: "flex", gap: "10px", flexWrap: "wrap" }}
+                      >
+                        <Typography
+                          variant="body2"
+                          color="error"
+                          fontWeight="bold"
+                        >
+                          {product.currency}
+                          {product.price} ({product.discount}%)
+                        </Typography>
+                        <Typography
+                          variant="body2"
+                          sx={{ textDecoration: "line-through" }}
+                        >
+                          Was Price: ${product.was_price}
+                        </Typography>
+                      </Box>
+                    </CardContent>
+                  </Card>
+                </Grid>
+              ))
+            ) : (
+              <Typography
+                variant="body2"
+                color="textSecondary"
+                textAlign="center"
+              >
+                No items found
+              </Typography>
+            )}
+          </Box>
+        </Grid>
+      </Grid>
 
       <ToastContainer
         position="bottom-right"

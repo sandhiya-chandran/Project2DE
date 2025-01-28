@@ -36,11 +36,12 @@ import DownloadIcon from "@mui/icons-material/Download";
 import CloseIcon from "@mui/icons-material/Close";
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate , useLocation } from "react-router-dom";
 import axios from "axios";
 
 const OrderDetail = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { id } = useParams();
   const [orderDetails, setOrderDetails] = useState(null); // State to store order details
   const [loading, setLoading] = useState(true);
@@ -61,6 +62,21 @@ const OrderDetail = () => {
   const [selectedRows, setSelectedRows] = useState([]);
 
   const isRowSelected = (index) => selectedRows.includes(index);
+
+
+  useEffect(() => {
+    const handleBackButton = () => {
+      // Custom logic for when the back button is pressed
+      console.log('Back button pressed');
+    };
+
+    // Listen for history changes (back button)
+    window.addEventListener('popstate', handleBackButton);
+
+    return () => {
+      window.removeEventListener('popstate', handleBackButton); // Clean up listener
+    };
+  }, []);
 
   const handleOpenDialog = (actionType) => {
     setAction(actionType); // Set the action to either 'Accept' or 'Reject'
@@ -225,6 +241,16 @@ const OrderDetail = () => {
 
   return (
     <Box>
+
+<Button
+      startIcon={<ArrowBackIcon />}
+      onClick={() => navigate(-1)}  // Use navigate(-1) instead of history.goBack()
+      variant="text"
+      sx={{ textTransform: 'capitalize', margin: "20px 20px 0px 20px", }}
+    >
+      Back to Orders
+    </Button>
+    
       <Box
         sx={{
           display: "flex",
@@ -234,6 +260,8 @@ const OrderDetail = () => {
         }}
       >
         <Box>
+     
+
           <Button
             variant="outlined"
             onClick={generateInvoice}

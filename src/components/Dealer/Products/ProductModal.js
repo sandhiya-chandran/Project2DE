@@ -123,6 +123,9 @@ const ProductModal = ({ open, onClose, product, handleAddToCart }) => {
           <Typography sx={{ mt: 1, color: product.availability ? "green" : "red" }}>
             {product.availability ? "In Stock" : "Out of Stock"}
           </Typography>
+          <Typography sx={{ mt: 1, color: product.availability ? "green" : "red" }}>
+            Units : {product.quantity}
+          </Typography>
           <Typography sx={{ mt: 1 }}>
            {product.brand_name}
           </Typography>

@@ -134,6 +134,19 @@ const ManufacturerHome = () => {
   //   },
   // };
 
+  const handleTotalSpendingsClick = () => {
+    navigate("/manufacturer/orders", { state: { filter: { payment_status: "Completed" } } });
+  };
+
+  const handlePendingClick = () => {
+    navigate("/manufacturer/orders", { state: { filter: { payment_status: "Pending" } } });
+  };
+
+  
+  const handleReorderClick = () => {
+    navigate("/manufacturer/orders", { state: { filter: { is_reorder: "yes" } } });
+  };
+
   const handleProductClick = (productId) => {
     if (!productId) {
       console.error("Invalid productId");
@@ -142,14 +155,7 @@ const ManufacturerHome = () => {
     navigate(`/manufacturer/products/details/${productId}`);
   };
 
-  const handlePendingClick = () => {
-    navigate(`/manufacturer/orders?filter=Pending`);
-  };
-
-  const handleReorderClick = () => {
-    navigate(`/manufacturer/orders?filter=yes`);
-  };
-
+  
   const handleActiveBuyerClick = () => {
     navigate(`/manufacturer/dealerList`);
   };
@@ -175,6 +181,7 @@ const ManufacturerHome = () => {
           <Grid container spacing={3} mb={3}>
             <Grid item xs={12} sm={6} md={3}>
               <Paper
+               onClick={() => handleTotalSpendingsClick()}
                 elevation={3}
                 style={{
                   padding: "16px",

@@ -1016,7 +1016,7 @@ function ProductList() {
                     textTransform: "capitalize",
                   }}
                 >
-                  {isBulkEditing ? "Cancel Edit" : "Bulk Edit"}
+                  {isBulkEditing ? "Cancel Edit" : "Edit"}
                 </Button>
 
                 <Button
@@ -1046,7 +1046,7 @@ function ProductList() {
                   sx={{
                     marginLeft: "5px",
                     fontSize: "12px",
-                    width: "70px",
+                    width: "100px",
                     paddingRight: "6px",
                   }}
                   InputProps={{
@@ -1281,6 +1281,9 @@ function ProductList() {
                           <MoreVertIcon sx={{ fontSize: "14px" }} />
                         </IconButton>
                       </TableCell>
+                      <TableCell sx={{ textAlign: "center" }}>
+                        Units
+                      </TableCell>
 
                       <TableCell sx={{ textAlign: "center" }}>MSRP</TableCell>
                       <TableCell sx={{ textAlign: "center" }}>
@@ -1349,7 +1352,12 @@ function ProductList() {
                               : "";
 
                           return (
-                            <TableRow key={item.id}>
+                            <TableRow key={item.id}
+                            sx={{
+                              '&:hover': {
+                                backgroundColor: '#6fb6fc38', // Customize your hover color here
+                              },
+                            }}>
                               {isBulkEditing && (
                                 <TableCell sx={{ textAlign: "center" }}>
                                   <Checkbox
@@ -1467,7 +1475,7 @@ function ProductList() {
                                   )}
                                 </TableCell>
                               </TableCell>
-
+                              <TableCell>{item.quantity}</TableCell>
                               <TableCell>
                                 {isBulkEditing ? (
                                   <input
