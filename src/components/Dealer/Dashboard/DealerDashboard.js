@@ -22,7 +22,6 @@ import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
 
 
 
-
 const DealerDashboard = () => {
 
   const [cartCount, setCartCount] = useState(0);
@@ -125,6 +124,8 @@ const DealerDashboard = () => {
              <Route path="checkoutRedirect" element={<OrdersRedirect/>} />
 
              <Route path="WishList" element={<WishList fetchCartCount={fetchCartCount} />} />
+
+
 
            </Routes>
          </Box>

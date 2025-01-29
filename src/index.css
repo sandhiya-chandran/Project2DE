@@ -31,21 +31,7 @@ td , th{
   height: 6px !important;
 }
 
-.css-qwdxx6{
-  height: 6px !important;
-  font-size: 12px !important;
-}
-.css-sx5hge {
-  padding-top: 0px !important;
-}
 
-.MuiSelect-select.MuiSelect-outlined.MuiInputBase-input.MuiOutlinedInput-input.css-w76bbz-MuiSelect-select-MuiInputBase-input-MuiOutlinedInput-input {
-  padding: 7px 30px 7px 15px;
-}
-
-.MuiSelect-select.MuiSelect-outlined.MuiInputBase-input.MuiOutlinedInput-input.css-mp9f0v {
-  padding: 7px 30px 7px 15px !important;
-}
 
 .para{
   font-size: '14px' ,
@@ -71,4 +57,28 @@ td , th{
   width: 100% !important;
   height: auto !important;
   object-fit: contain; /* Ensures the image is resized to fit without distortion */
+}
+
+.css-qwdxx6{
+  height: 6px !important;
+  font-size: 12px !important;
+}
+/* .css-sx5hge {
+  padding-top: 0px !important;
+} */
+
+.MuiSelect-select.MuiSelect-outlined.MuiInputBase-input.MuiOutlinedInput-input.css-w76bbz-MuiSelect-select-MuiInputBase-input-MuiOutlinedInput-input {
+  padding: 7px 30px 7px 15px;
+}
+
+.MuiSelect-select.MuiSelect-outlined.MuiInputBase-input.MuiOutlinedInput-input.css-mp9f0v {
+  padding: 7px 30px 7px 15px !important;
+}
+
+.css-19qnlrw-MuiFormLabel-root-MuiInputLabel-root{
+  top: -6px !important;
+}
+
+.css-10o2lyd-MuiStack-root{
+  overflow: hidden !important;
 }

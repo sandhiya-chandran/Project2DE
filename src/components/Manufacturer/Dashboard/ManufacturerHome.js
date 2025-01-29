@@ -12,7 +12,9 @@ import {
   TableContainer,
   TableHead,
   TableRow,
-  Box,
+  Box,MenuItem,
+  Select,
+  FormControl
 } from "@mui/material";
 import { Bar, Line } from "react-chartjs-2";
 import { useNavigate } from "react-router-dom";
@@ -48,10 +50,14 @@ const ManufacturerHome = () => {
   const [dashboardData, setDashboardData] = useState(null);
   const [dealerOrderData, setDealerOrderData] = useState(null);
   const [loading, setLoading] = useState(true); // Set loading to true initially
-
+  const [topSellingProducts, setTopSellingProducts] = useState(null);
+  const [selectedCategory, setSelectedCategory] = useState("");
+  const [dashboardCategory, setDashboardCategory] = useState(null);
+    
   const dealers = dealerOrderData?.total_dealer_list || [];
   const displayedDealers = showAll ? dealers : dealers.slice(0, 5);
-
+  const user = JSON.parse(localStorage.getItem("user"));
+ 
   const handleSeeMore = () => {
     setShowAll(!showAll);
   };
@@ -89,6 +95,40 @@ const ManufacturerHome = () => {
     fetchData();
   }, []);
 
+   // Fetch Top Selling Products
+   const fetchTopSellingProducts = async (categoryId = "") => {
+    try {
+      setLoading(true);
+      const response = await axios.get(
+        `${process.env.REACT_APP_IP}topSellingProductsForDashBoard/?manufacture_unit_id=${user.manufacture_unit_id}&product_category_id=${categoryId}`
+      );
+      setTopSellingProducts(response.data.data);
+    } catch (error) {
+      console.error("Error fetching top selling products:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchTopSellingProducts();
+  }, []);
+
+  // Fetch Categories
+  useEffect(() => {
+    const fetchDashboardCategory = async () => {
+      try {
+        const response = await axios.get(
+          `${process.env.REACT_APP_IP}obtainEndlevelcategoryList/?manufacture_unit_id=${user.manufacture_unit_id}`
+        );
+        setDashboardCategory(response.data.data || []);
+      } catch (error) {
+        console.error("Error fetching category data:", error);
+      }
+    };
+    fetchDashboardCategory();
+  }, []);
+
   const barChartData = {
     labels:
       dashboardData?.top_selling_brands?.map((item) => item.brand_name) || [],
@@ -121,19 +161,6 @@ const ManufacturerHome = () => {
     ],
   };
 
-  // const chartOptions = {
-  //   responsive: true,
-  //   plugins: {
-  //     legend: {
-  //       position: "top",
-  //     },
-  //     title: {
-  //       display: true,
-  //       text: "No of products sold",
-  //     },
-  //   },
-  // };
-
   const handleTotalSpendingsClick = () => {
     navigate("/manufacturer/orders", { state: { filter: { payment_status: "Completed" } } });
   };
@@ -142,7 +169,6 @@ const ManufacturerHome = () => {
     navigate("/manufacturer/orders", { state: { filter: { payment_status: "Pending" } } });
   };
 
-  
   const handleReorderClick = () => {
     navigate("/manufacturer/orders", { state: { filter: { is_reorder: "yes" } } });
   };
@@ -153,6 +179,14 @@ const ManufacturerHome = () => {
       return;
     }
     navigate(`/manufacturer/products/details/${productId}`);
+  };
+
+  
+  // Handle Category Change
+  const handleCategoryChange = (event) => {
+    const categoryId = event.target.value;
+    setSelectedCategory(categoryId);
+    fetchTopSellingProducts(categoryId);
   };
 
   
@@ -179,6 +213,7 @@ const ManufacturerHome = () => {
         <Box p={2}>
           {/* Sales Overview Cards */}
           <Grid container spacing={3} mb={3}>
+
             <Grid item xs={12} sm={6} md={3}>
               <Paper
                onClick={() => handleTotalSpendingsClick()}
@@ -279,75 +314,88 @@ const ManufacturerHome = () => {
           {/* Top Selling Products and Total Dealers Section */}
           <Grid container spacing={2}>
             {/* Top Selling Products Section */}
-            <Grid item xs={12} md={9}>
-              <Typography variant="h6" mt={3} mb={2}>
-                Top Selling Products
-              </Typography>
-              <TableContainer component={Paper}>
-                <Table>
-                  <TableHead>
-                    <TableRow>
-                      <TableCell>Product</TableCell>
-                      <TableCell>SKU No</TableCell>
-                      <TableCell>Brand</TableCell>
-                      <TableCell>Category</TableCell>
-                      <TableCell>Lastest Purchase</TableCell>
-                      <TableCell>Units Sold</TableCell>
-                      <TableCell>Total Sales ($)</TableCell>
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {dashboardData.top_selling_products &&
-                    dashboardData.top_selling_products.length > 0 ? (
-                      dashboardData.top_selling_products.map((product) => (
-                        <TableRow
-                          key={product.id}
-                          onClick={() => handleProductClick(product.product_id)}
-                          style={{ cursor: "pointer" }}
-                        >
-                          <TableCell>
-                            <img
-                              src={product.primary_image}
-                              alt={product.sku_number}
-                              width="30"
-                            />
-                          </TableCell>
-                          <TableCell>{product.sku_number}</TableCell>
-                          <TableCell>
-                            {product.brand_logo &&
-                            product.brand_logo.startsWith("http") ? (
-                              <img
-                                src={product.brand_logo}
-                                alt={product.brand_name}
-                                width="15"
-                              />
-                            ) : (
-                              product.brand_name
-                            )}
-                          </TableCell>
-                          <TableCell>{product.category_name || "NA"}</TableCell>
-                          <TableCell>
-                            {new Date(
-                              product.last_updated
-                            ).toLocaleDateString()}
-                          </TableCell>
-                          <TableCell>{product.units_sold}</TableCell>
-                          <TableCell>
-                            {product.total_sales.toFixed(2)}
-                          </TableCell>
-                        </TableRow>
-                      ))
-                    ) : (
-                      <TableRow>
-                        <TableCell colSpan={7} style={{ textAlign: "center" }}>
-                          No products found
-                        </TableCell>
-                      </TableRow>
-                    )}
-                  </TableBody>
-                </Table>
-              </TableContainer>
-            </Grid>
+             <Grid item xs={12} md={9}>
+                        <Box sx={{display: 'flex', justifyContent: 'space-between' , marginBottom: 1 , marginTop: 4}}>
+                                <Typography variant="h6">
+                                   Top Selling Products
+                                  </Typography>
+                      
+                                 <Box>
+                                 <FormControl size="small">
+                         <Select value={selectedCategory} onChange={handleCategoryChange} displayEmpty>
+                           <MenuItem value="">All Categories</MenuItem>
+                           {dashboardCategory.map((category) => (
+                             <MenuItem key={category.id} value={category.id}>
+                               {category.name}
+                             </MenuItem>
+                           ))}
+                         </Select>
+                       </FormControl>
+                                 </Box>
+                        </Box>
+                       <TableContainer component={Paper}>
+                     <Table>
+                       <TableHead>
+                         <TableRow>
+                       <TableCell>Product</TableCell>
+                       <TableCell>SKU No</TableCell>
+                       <TableCell>Brand</TableCell>
+                       <TableCell>Category</TableCell>
+                       <TableCell>Lastest Purchase</TableCell>
+                       <TableCell>Units Sold</TableCell>
+                       <TableCell>Total Sales ($)</TableCell>
+                         </TableRow>
+                       </TableHead>
+                       <TableBody>
+           
+                 {topSellingProducts.top_selling_products && topSellingProducts.top_selling_products.length > 0 ? (
+                   topSellingProducts.top_selling_products.map((product) => (
+                     <TableRow key={product.id} onClick={() => handleProductClick(product.product_id)} style={{ cursor: 'pointer' }}
+                     sx={{
+                      '&:hover': {
+                        backgroundColor: '#6fb6fc38', 
+                      },
+                    }}
+                    >
+                     <TableCell >
+                   <img
+                     src={product.primary_image}
+                     alt={product.sku_number}
+                     width="30"
+                   />
+                     </TableCell>
+                     <TableCell>{product.sku_number}</TableCell>
+                     <TableCell>
+             {product.brand_logo && product.brand_logo.startsWith("http") ? (
+               <img
+                 src={product.brand_logo}
+                 alt={product.brand_name}
+                 width="15"
+               />
+             ) : (
+               product.brand_name
+             )}
+           </TableCell>
+                     <TableCell>{product.category_name}</TableCell>
+                     <TableCell>
+                   {new Date(product.last_updated).toLocaleDateString()}
+                     </TableCell>
+                     <TableCell>{product.units_sold}</TableCell>
+                     <TableCell>{product.total_sales.toFixed(2)}</TableCell>
+                   </TableRow>
+                   ))
+                 ) : (
+                   <TableRow>
+                     <TableCell colSpan={7} style={{ textAlign: 'center' }}>
+                   No products found
+                     </TableCell>
+                   </TableRow>
+                 )}
+           
+                       </TableBody>
+                     </Table>
+                       </TableContainer>
+                   </Grid>
 
             {/* Total Dealers Section */}
             <Grid item xs={12} md={3}>

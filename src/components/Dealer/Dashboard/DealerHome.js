@@ -14,7 +14,9 @@ import {
   Card,
   CardContent,
   CardHeader,
-  Divider,CircularProgress
+  Divider,CircularProgress,MenuItem,
+  Select,
+  FormControl
 } from "@mui/material";
 import {
   Chart as ChartJS,
@@ -34,6 +36,10 @@ const DashboardHome = () => {
   const navigate = useNavigate();
   const user = JSON.parse(localStorage.getItem("user"));
   const [dashboardData, setDashboardData] = useState(null);
+  const [topSellingProducts, setTopSellingProducts] = useState(null);
+  const [selectedCategory, setSelectedCategory] = useState("");
+  const [dashboardCategory, setDashboardCategory] = useState(null);
+    
   const [loading, setLoading] = useState(true); 
 
   // Fetch Dashboard Data from API
@@ -57,6 +63,41 @@ const DashboardHome = () => {
       fetchDashboardData();
     }
   }, [user, dashboardData]);  // Remove 'loading' from dependencies
+
+
+   // Fetch Top Selling Products
+   const fetchTopSellingProducts = async (categoryId = "") => {
+    try {
+      setLoading(true);
+      const response = await axios.get(
+        `${process.env.REACT_APP_IP}topSellingProductsForDashBoard/?manufacture_unit_id=${user.manufacture_unit_id}&product_category_id=${categoryId}`
+      );
+      setTopSellingProducts(response.data.data);
+    } catch (error) {
+      console.error("Error fetching top selling products:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchTopSellingProducts();
+  }, []);
+
+  // Fetch Categories
+  useEffect(() => {
+    const fetchDashboardCategory = async () => {
+      try {
+        const response = await axios.get(
+          `${process.env.REACT_APP_IP}obtainEndlevelcategoryList/?manufacture_unit_id=${user.manufacture_unit_id}`
+        );
+        setDashboardCategory(response.data.data || []);
+      } catch (error) {
+        console.error("Error fetching category data:", error);
+      }
+    };
+    fetchDashboardCategory();
+  }, []);
 
   // Return loading state if data is not yet fetched
   if (loading || !dashboardData) {
@@ -140,7 +181,6 @@ const DashboardHome = () => {
     navigate("/dealer/orders", { state: { filter: { payment_status: "Pending" } } });
   };
 
-  
   const handleReorderClick = () => {
     navigate("/dealer/orders", { state: { filter: { is_reorder: "yes" } } });
   };
@@ -152,6 +192,13 @@ const DashboardHome = () => {
   const handleOrderClick = (orderId) => {
     console.log("OrderDetail ID:", orderId);
     navigate("/dealer/OrderDetail", { state: { orderId } });
+  };
+
+  // Handle Category Change
+  const handleCategoryChange = (event) => {
+    const categoryId = event.target.value;
+    setSelectedCategory(categoryId);
+    fetchTopSellingProducts(categoryId);
   };
 
   const handleProductClick = (productId) => {
@@ -208,10 +255,25 @@ const DashboardHome = () => {
 
        {/* Top Selling Products Table  */}
         <Grid container spacing={2}>
-          <Grid item xs={12} md={8}>
-            <Typography variant="h6" mt={3} mb={2}>
-          Top Selling Products
-            </Typography>
+        <Grid item xs={12} md={8}>
+             <Box sx={{display: 'flex', justifyContent: 'space-between' , marginBottom: 1 , marginTop: 4}}>
+                     <Typography variant="h6">
+                        Top Selling Products
+                       </Typography>
+           
+                      <Box>
+                      <FormControl size="small">
+              <Select value={selectedCategory} onChange={handleCategoryChange} displayEmpty>
+                <MenuItem value="">All Categories</MenuItem>
+                {dashboardCategory.map((category) => (
+                  <MenuItem key={category.id} value={category.id}>
+                    {category.name}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+                      </Box>
+             </Box>
             <TableContainer component={Paper}>
           <Table>
             <TableHead>
@@ -227,9 +289,14 @@ const DashboardHome = () => {
             </TableHead>
             <TableBody>
 
-      {dashboardData.top_selling_products && dashboardData.top_selling_products.length > 0 ? (
-        dashboardData.top_selling_products.map((product) => (
-          <TableRow key={product.id} onClick={() => handleProductClick(product.product_id)} style={{ cursor: 'pointer' }}>
+      {topSellingProducts.top_selling_products && topSellingProducts.top_selling_products.length > 0 ? (
+        topSellingProducts.top_selling_products.map((product) => (
+          <TableRow key={product.id} onClick={() => handleProductClick(product.product_id)} style={{ cursor: 'pointer' }}
+          sx={{
+            '&:hover': {
+              backgroundColor: '#6fb6fc38', 
+            },
+          }}>
           <TableCell >
         <img
           src={product.primary_image}
@@ -268,7 +335,7 @@ const DashboardHome = () => {
             </TableBody>
           </Table>
             </TableContainer>
-          </Grid>
+        </Grid>
           <Grid item xs={12} md={4}>
             <Typography variant="h6" mt={3} mb={2}>
           Your Recent Orders

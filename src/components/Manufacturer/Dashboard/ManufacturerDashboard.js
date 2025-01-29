@@ -20,7 +20,6 @@ import UserProfile from "./UserProfile";
 import SettingsPage from "../Settings/Settingspage";
 import { Button , Tooltip } from "@mui/material";
 import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
-import Test from "../Products/test";
 
 const ManufacturerDashboard = () => {
   const [isVisible, setIsVisible] = useState(false);
@@ -78,7 +77,7 @@ const ManufacturerDashboard = () => {
           <Route path="products/validate" element={<ImportValidate />} />
           <Route path="products/personalimport" element={<PersonalImport />} />
           <Route path="settings" element={<SettingsPage />} />
-          <Route path="test" element={<Test />} />
+        
         </Routes>
       </Box>
 

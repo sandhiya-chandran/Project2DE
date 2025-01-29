@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from "react";
 import {
   Tabs,
   Tab,
@@ -10,13 +10,20 @@ import {
   TableRow,
   Grid,
   Typography,
-  TextField, Paper, Card, CardContent, FormControlLabel, Switch, Button,
-  IconButton, InputAdornment
-} from '@mui/material';
-import EditIcon from '@mui/icons-material/Edit';
-import axios from 'axios';
-import { useParams } from 'react-router-dom';
-import EmailTemplatePopUp from '../../Manufacturer/Settings/EmailTemplatePopUp';
+  TextField,
+  Paper,
+  Card,
+  CardContent,
+  FormControlLabel,
+  Switch,
+  Button,
+  IconButton,
+  InputAdornment,
+} from "@mui/material";
+import EditIcon from "@mui/icons-material/Edit";
+import axios from "axios";
+import { useParams } from "react-router-dom";
+import EmailTemplatePopUp from "../../Manufacturer/Settings/EmailTemplatePopUp";
 
 function Settingspage() {
   const [selectedTab, setSelectedTab] = useState(0);
@@ -26,21 +33,21 @@ function Settingspage() {
   const [selectedTemplate, setSelectedTemplate] = useState(null);
   const [enabled, setEnabled] = useState(false);
   const [companyInfo, setCompanyInfo] = useState({
-    companyName: '',
-    contactName: '',
-    email: '',
-    phone: '',
-    address: '',
-    bankName: '',
-    bankAccount: '',
+    companyName: "",
+    contactName: "",
+    email: "",
+    phone: "",
+    address: "",
+    bankName: "",
+    bankAccount: "",
   });
 
   // Fetch email templates on component load
   useEffect(() => {
     const fetchEmailTemplates = async () => {
       try {
-        const userData = localStorage.getItem('user');
-        let manufactureUnitId = '';
+        const userData = localStorage.getItem("user");
+        let manufactureUnitId = "";
 
         if (userData) {
           const data = JSON.parse(userData);
@@ -55,7 +62,7 @@ function Settingspage() {
         );
         setEmailTemplates(response.data.data || []);
       } catch (error) {
-        console.error('Error fetching email templates:', error);
+        console.error("Error fetching email templates:", error);
       }
     };
 
@@ -93,170 +100,110 @@ function Settingspage() {
   return (
     <div>
       {/* Tabs at the top */}
-      <Paper elevation={3} sx={{ marginBottom: '20px' , boxShadow:'none',
-         backgroundColor:'white',
-         position:'sticky',
-         top:'56px',
-         padding:'10px 0px',
-         zIndex:9,
-       }}>
+      <Paper
+        elevation={3}
+        sx={{
+          marginBottom: "20px",
+          boxShadow: "none",
+          backgroundColor: "white",
+          position: "sticky",
+          top: "56px",
+          padding: "10px 0px",
+          zIndex: 9,
+        }}
+      >
         <Tabs
           value={selectedTab}
           onChange={handleTabChange}
           textColor="primary"
           indicatorColor="primary"
           variant="fullWidth"
-          sx={{ textTransform: 'capitalize' }}
+          sx={{ textTransform: "capitalize" }}
         >
-          <Tab sx={{ textTransform: 'capitalize' }} label="General Info" />
-          <Tab sx={{ textTransform: 'capitalize' }} label="Email Template" />
-          <Tab sx={{ textTransform: 'capitalize' }} label="Notifications" />
+          <Tab sx={{ textTransform: "capitalize" }} label="General Info" />
+          <Tab sx={{ textTransform: "capitalize" }} label="Email Template" />
+          <Tab sx={{ textTransform: "capitalize" }} label="Notifications" />
         </Tabs>
       </Paper>
 
-     <Box sx={{margin:'10px'}}>
-       {/* Tab Content */}
-       <Grid container spacing={2}>
-        <Grid item xs={12}>
-          {/* General Info Tab */}
-          <Box hidden={selectedTab !== 0}>
-            {/* <Typography variant="h4" gutterBottom>
-              General Information
-            </Typography>
-            <Paper elevation={3} sx={{ padding: '20px' }}>
-              <TextField
-                fullWidth
-                label="Company Name"
-                name="companyName"
-                value={companyInfo.companyName}
-                onChange={handleInputChange}
-                sx={{ marginBottom: '16px' }}
-                placeholder="Enter your company name"
-              />
-              <TextField
-                fullWidth
-                label="Contact Person"
-                name="contactName"
-                value={companyInfo.contactName}
-                onChange={handleInputChange}
-                sx={{ marginBottom: '16px' }}
-                placeholder="Enter the contact person name"
-              />
-              <TextField
-                fullWidth
-                label="Email"
-                name="email"
-                value={companyInfo.email}
-                onChange={handleInputChange}
-                sx={{ marginBottom: '16px' }}
-                placeholder="Enter your business email"
-                type="email"
-              />
-              <TextField
-                fullWidth
-                label="Phone Number"
-                name="phone"
-                value={companyInfo.phone}
-                onChange={handleInputChange}
-                sx={{ marginBottom: '16px' }}
-                placeholder="Enter your contact number"
-                type="tel"
-              />
-              <TextField
-                fullWidth
-                label="Business Address"
-                name="address"
-                value={companyInfo.address}
-                onChange={handleInputChange}
-                sx={{ marginBottom: '16px' }}
-                placeholder="Enter your business address"
-              />
-              <TextField
-                fullWidth
-                label="Bank Name"
-                name="bankName"
-                value={companyInfo.bankName}
-                onChange={handleInputChange}
-                sx={{ marginBottom: '16px' }}
-                placeholder="Enter your bank name"
-              />
-              <TextField
-                fullWidth
-                label="Bank Account Number"
-                name="bankAccount"
-                value={companyInfo.bankAccount}
-                onChange={handleInputChange}
-                sx={{ marginBottom: '16px' }}
-                placeholder="Enter your bank account number"
-                type="number"
-                InputProps={{
-                  startAdornment: (
-                    <InputAdornment position="start">#</InputAdornment>
-                  ),
+      <Box sx={{ margin: "10px" }}>
+        {/* Tab Content */}
+        <Grid container spacing={2}>
+          <Grid item xs={12}>
+            {/* General Info Tab */}
+            <Box hidden={selectedTab !== 0}>
+              <Box
+                sx={{
+                  display: "flex",
+                  justifyContent: "center",
+                  alignItems: "center",
+                  minHeight: "200px",
+                  textAlign: "center",
+                  flexDirection: "column",
                 }}
-              />
-              <Button variant="contained" color="primary" sx={{ marginTop: '16px' }}>
-                Save Changes
-              </Button>
-            </Paper> */}
+              >
+                <Typography variant="h6" color="textSecondary">
+                  This feature will be available soon!
+                </Typography>
+                <Typography variant="body2" color="textSecondary">
+                  We're working on it. Stay tuned!
+                </Typography>
+              </Box>
+            </Box>
 
-<Box
-    sx={{
-      display: "flex",
-      justifyContent: "center",
-      alignItems: "center",
-      minHeight: "200px",
-      textAlign: "center",
-      flexDirection: "column",
-    }}
-  >
-    <Typography variant="h6" color="textSecondary">
-      This feature will be available soon!
-    </Typography>
-    <Typography variant="body2" color="textSecondary">
-      We're working on it. Stay tuned!
-    </Typography>
-  </Box>
-          </Box>
-
-          {/* Email Template Tab */}
-          <Box hidden={selectedTab !== 1}>
-            {/* <Typography variant="h6" gutterBottom>
+            {/* Email Template Tab */}
+            <Box hidden={selectedTab !== 1}>
+              {/* <Typography variant="h6" gutterBottom>
               Email Templates
             </Typography> */}
-            <Paper elevation={3} sx={{ padding: '16px', overflowX: 'auto' }}>
-              <Table>
-                <TableHead>
-                  <TableRow>
-                    <TableCell align="center" sx={{ fontWeight: 'bold' }}>No</TableCell>
-                    <TableCell align="center" sx={{ fontWeight: 'bold' }}>Code</TableCell>
-                    <TableCell align="center" sx={{ fontWeight: 'bold' }}>Subject</TableCell>
-                    <TableCell align="center" sx={{ fontWeight: 'bold' }}>Content</TableCell>
-                    <TableCell align="center" sx={{ fontWeight: 'bold' }}>Actions</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {emailTemplates.map((template, index) => (
-                    <TableRow key={template.id}>
-                      <TableCell align="center">{index + 1}</TableCell>
-                      <TableCell align="center">{template.code}</TableCell>
-                      <TableCell align="center">{template.subject}</TableCell>
-                      <TableCell align="center">{template.default_template}</TableCell>
-                      <TableCell align="center">
-                        <IconButton onClick={() => handleOpenPopup(template)} color="primary">
-                          <EditIcon />
-                        </IconButton>
+              <Paper elevation={3} sx={{ padding: "16px", overflowX: "auto" }}>
+                <Table>
+                  <TableHead>
+                    <TableRow>
+                      <TableCell align="center" sx={{ fontWeight: "bold" }}>
+                        No
+                      </TableCell>
+                      <TableCell align="center" sx={{ fontWeight: "bold" }}>
+                        Code
+                      </TableCell>
+                      <TableCell align="center" sx={{ fontWeight: "bold" }}>
+                        Subject
+                      </TableCell>
+                      <TableCell align="center" sx={{ fontWeight: "bold" }}>
+                        Content
+                      </TableCell>
+                      <TableCell align="center" sx={{ fontWeight: "bold" }}>
+                        Actions
                       </TableCell>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </Paper>
-          </Box>
+                  </TableHead>
+                  <TableBody>
+                    {emailTemplates.map((template, index) => (
+                      <TableRow key={template.id}>
+                        <TableCell align="center">{index + 1}</TableCell>
+                        <TableCell align="center">{template.code}</TableCell>
+                        <TableCell align="center">{template.subject}</TableCell>
+                        <TableCell align="center">
+                          {template.default_template}
+                        </TableCell>
+                        <TableCell align="center">
+                          <IconButton
+                            onClick={() => handleOpenPopup(template)}
+                            color="primary"
+                          >
+                            <EditIcon />
+                          </IconButton>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </Paper>
+            </Box>
 
-          {/* Notifications Tab */}
-          <Box hidden={selectedTab !== 2}>
-            {/* <Card elevation={3} sx={{ padding: '20px' }}>
+            {/* Notifications Tab */}
+            <Box hidden={selectedTab !== 2}>
+              {/* <Card elevation={3} sx={{ padding: '20px' }}>
               <CardContent>
                 <Typography variant="h6" gutterBottom>
                   Notifications
@@ -285,27 +232,27 @@ function Settingspage() {
               Save Settings
             </Button> */}
 
-<Box
-    sx={{
-      display: "flex",
-      justifyContent: "center",
-      alignItems: "center",
-      minHeight: "200px",
-      textAlign: "center",
-      flexDirection: "column",
-    }}
-  >
-    <Typography variant="h6" color="textSecondary">
-      This feature will be available soon!
-    </Typography>
-    <Typography variant="body2" color="textSecondary">
-      We're working on it. Stay tuned!
-    </Typography>
-  </Box>
-          </Box>
+              <Box
+                sx={{
+                  display: "flex",
+                  justifyContent: "center",
+                  alignItems: "center",
+                  minHeight: "200px",
+                  textAlign: "center",
+                  flexDirection: "column",
+                }}
+              >
+                <Typography variant="h6" color="textSecondary">
+                  This feature will be available soon!
+                </Typography>
+                <Typography variant="body2" color="textSecondary">
+                  We're working on it. Stay tuned!
+                </Typography>
+              </Box>
+            </Box>
+          </Grid>
         </Grid>
-      </Grid>
-     </Box>
+      </Box>
 
       {/* Popup Component */}
       {isPopupOpen && selectedTemplate && (

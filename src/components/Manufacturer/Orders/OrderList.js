@@ -35,7 +35,7 @@ import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import { Margin } from "@mui/icons-material";
-
+import ClearIcon from "@mui/icons-material/Clear";
 // Styled TextField
 const CustomTextField = styled(TextField)(({ theme }) => ({
   "& .MuiOutlinedInput-root": {
@@ -88,6 +88,7 @@ const OrderList = () => {
   const [dealerAnchorEl, setDealerAnchorEl] = useState(null);
   const [selectedDealerIds, setSelectedDealerIds] = useState([]);
   const [selectedDate, setSelectedDate] = useState(null);
+  const [endDate, setEndDate] = useState(null);
   const [loading, setLoading] = useState(true);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [error, setError] = useState(null); // Track error
@@ -158,9 +159,6 @@ const OrderList = () => {
   const handleCloseMenu = () => {
     setAnchorEl(null);
   };
-
-
-
  
   const fetchOrders = async () => {
     setLoading(true);
@@ -170,8 +168,11 @@ const OrderList = () => {
     }
   
     try {
-      const formattedDate = selectedDate ? selectedDate.format("YYYY-MM-DD") : null;
-  
+      const formattedStartDate = selectedDate
+      ? selectedDate.format("YYYY-MM-DD")
+      : null;
+    const formattedEndDate = endDate ? endDate.format("YYYY-MM-DD") : null;
+   
       const response = await axios.post(
         `${process.env.REACT_APP_IP}obtainOrderList/`,
         {
@@ -185,7 +186,8 @@ const OrderList = () => {
           delivery_status,  // Use state directly
           fulfilled_status, // Use state directly
           payment_status,   // Use state directly
-          search_by_date: formattedDate,
+          start_date: formattedStartDate,
+          end_date: formattedEndDate,
           is_reorder,
         }
       );
@@ -262,7 +264,8 @@ const OrderList = () => {
     payment_status,
     is_reorder,
     selectedDealerIds,
-    selectedDate
+    selectedDate,
+    endDate,
   ]);
 
   
@@ -380,53 +383,59 @@ const OrderList = () => {
           </Button>
 
           <LocalizationProvider dateAdapter={AdapterDayjs}>
+          <Box sx={{ display: "flex", gap: 2 }}>
             <DemoContainer components={["DatePicker"]}>
               <DatePicker
+                label="Start Date"
                 value={selectedDate}
-                onChange={(newDate) => {
-                  console.log("Selected Date after change:", newDate);
-                  setSelectedDate(newDate);
-                }}
+                onChange={(newDate) => setSelectedDate(newDate)}
                 renderInput={(params) => (
                   <TextField
                     {...params}
                     size="small"
+                    InputLabelProps={{ shrink: false }}
                     sx={{
                       width: 200,
                       fontSize: "0.875rem",
                       height: 40,
-                      "& .MuiInputBase-root": {
-                        height: 40,
-                      },
-                      "& .MuiOutlinedInput-root": {
-                        padding: "0 14px", // Adjust this padding as needed
-                      },
-                      "& .MuiInputBase-input": {
-                        padding: "0px", // Remove padding from the input itself
-                      },
-                    }}
-                    componentsProps={{
-                      actionBar: {
-                        sx: {
-                          fontSize: "1rem", // Adjust calendar icon size here
-                        },
-                      },
                     }}
                   />
                 )}
               />
             </DemoContainer>
 
-            {/* Button to manually trigger fetchOrders */}
-            {/* <Button
-              sx={{ fontSize: "14px" }}
-              variant="contained"
-              color="primary"
-              onClick={fetchOrders}
+            <DemoContainer components={["DatePicker"]}>
+              <DatePicker
+                label="End Date"
+                value={endDate}
+                onChange={(newDate) => setEndDate(newDate)}
+                renderInput={(params) => (
+                  <TextField
+                    {...params}
+                    size="small"
+                    InputLabelProps={{ shrink: false }}
+                    sx={{
+                      width: 200,
+                      fontSize: "0.875rem",
+                      height: 40,
+                    }}
+                  />
+                )}
+              />
+            </DemoContainer>
+
+            {/* Button to clear the date filter */}
+            <IconButton
+              onClick={() => {
+                setSelectedDate(null);
+                setEndDate(null);
+              }}
+              size="small"
             >
-              Fetch Orders
-            </Button> */}
-          </LocalizationProvider>
+              <ClearIcon />
+            </IconButton>
+          </Box>
+        </LocalizationProvider>
 
           <Box display="flex" alignItems="center">
         
@@ -574,7 +583,7 @@ const OrderList = () => {
                       style={{ cursor: "pointer" }}
                       sx={{
                         '&:hover': {
-                          backgroundColor: '#6fb6fc38', // Customize your hover color here
+                          backgroundColor: '#6fb6fc38', 
                         },
                       }}
                     >

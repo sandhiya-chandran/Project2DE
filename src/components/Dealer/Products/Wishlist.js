@@ -359,6 +359,7 @@ const Wishlist = ({ fetchCartCount }) => {
                 </Typography>
               </Box>
               <Box>
+              <Tooltip title="Remove Item">
                 <IconButton
                   color="error"
                   onClick={(e) => {
@@ -368,6 +369,7 @@ const Wishlist = ({ fetchCartCount }) => {
                 >
                   <DeleteIcon />
                 </IconButton>
+                </Tooltip>
               </Box>
             </Box>
           </CardContent>

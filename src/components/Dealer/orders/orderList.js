@@ -1,6 +1,21 @@
 import React, { useEffect, useState } from "react";
 import { useLocation } from "react-router-dom";
-import { Box, Button, Table, TableBody,MenuItem, Menu,TableCell, TableContainer, TableHead, TableRow, Paper, TextField ,IconButton, InputAdornment,} from "@mui/material";
+import {
+  Box,
+  Button,
+  Table,
+  TableBody,
+  MenuItem,
+  Menu,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Paper,
+  TextField,
+  IconButton,
+  InputAdornment,
+} from "@mui/material";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import ClearIcon from "@mui/icons-material/Clear";
@@ -23,7 +38,9 @@ const OrderList = () => {
   const [sortConfig, setSortConfig] = useState({ key: "", direction: "asc" });
   const [delivery_status, setDeliveryStatus] = useState("all");
   const [fulfilled_status, setFulfilledStatus] = useState("all");
-  const [payment_status, setPaymentStatus] = useState(filter?.payment_status || "all");
+  const [payment_status, setPaymentStatus] = useState(
+    filter?.payment_status || "all"
+  );
   const [is_reorder, setis_reorder] = useState(filter?.is_reorder || "all");
   const [selectedDate, setSelectedDate] = useState(null);
   const [endDate, setEndDate] = useState(null);
@@ -31,11 +48,14 @@ const OrderList = () => {
   const [page, setPage] = useState(0);
 
   const fetchOrderList = async (key, direction) => {
-    console.log('pass', key, direction);
+    console.log("pass", key, direction);
     try {
-      const formattedStartDate = selectedDate ? selectedDate.format("YYYY-MM-DD") : null;
+      const formattedStartDate = selectedDate
+        ? selectedDate.format("YYYY-MM-DD")
+        : null;
       const formattedEndDate = endDate ? endDate.format("YYYY-MM-DD") : null;
-      const sort_by_value = direction === 'asc' ? 1 : direction === 'desc' ? -1 : '';
+      const sort_by_value =
+        direction === "asc" ? 1 : direction === "desc" ? -1 : "";
 
       const response = await axios.post(
         `${process.env.REACT_APP_IP}obtainOrderListForDealer/`,
@@ -43,13 +63,13 @@ const OrderList = () => {
           user_id: user?.id, // Safely access user ID
           sort_by: key || "", // Provide fallback for sort key
           sort_by_value: sort_by_value, // Determine sort direction
-          delivery_status,  // Use state directly
+          delivery_status, // Use state directly
           fulfilled_status, // Use state directly
           payment_status,
-          is_reorder,   // Use state directly
+          is_reorder, // Use state directly
           // search_by_date: formattedDate,
           start_date: formattedStartDate,
-         end_date: formattedEndDate,
+          end_date: formattedEndDate,
         }
       );
 
@@ -77,7 +97,6 @@ const OrderList = () => {
     endDate,
   ]);
 
-
   const handlePayment = (orderId) => {
     console.log("PaymentConfirm ID: ", orderId);
     navigate("/dealer/paymentConfirm", { state: { orderId } });
@@ -104,7 +123,7 @@ const OrderList = () => {
     (order) =>
       order.order_id.toString().includes(searchQuery) ||
       order.payment_status.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      order.delivery_status.toLowerCase().includes(searchQuery.toLowerCase())||
+      order.delivery_status.toLowerCase().includes(searchQuery.toLowerCase()) ||
       order.fulfilled_status.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
@@ -117,13 +136,12 @@ const OrderList = () => {
   };
 
   const handleSelectSort = (key, direction) => {
-    console.log('army',key, direction)
+    console.log("army", key, direction);
     setSortConfig({ key, direction });
-    setPage(0);  // Reset page to 0 when sorting is applied
-    fetchOrderList( key, direction);
-    setAnchorEl(null);  // Close the menu after selection
+    setPage(0); // Reset page to 0 when sorting is applied
+    fetchOrderList(key, direction);
+    setAnchorEl(null); // Close the menu after selection
   };
-
 
   const handleStatusFilter = (statusType, status) => {
     // Clear all filters except the one that was selected
@@ -148,71 +166,82 @@ const OrderList = () => {
       setPaymentStatus("all");
       setis_reorder(status);
     }
-  
+
     setAnchorEl(null); // Close the menu
   };
 
   return (
-    <Box sx={{ display: "flex", flexDirection: "column"}}>
-     
-      <Box  sx={{ display: "flex", justifyContent: "flex-end", alignItems:'center' , gap:2 , padding:'15px 10px',
-         backgroundColor:'white',
-         position:'sticky',
-         top:'55px',
-         zIndex:9,
-      }}> 
+    <Box sx={{ display: "flex", flexDirection: "column" }}>
+      <Box
+        sx={{
+          display: "flex",
+          justifyContent: "flex-end",
+          alignItems: "center",
+          gap: 2,
+          padding: "15px 10px",
+          backgroundColor: "white",
+          position: "sticky",
+          top: "55px",
+          zIndex: 9,
+        }}
+      >
+        
+        <LocalizationProvider dateAdapter={AdapterDayjs}>
+          <Box sx={{ display: "flex", gap: 2 }}>
+            <DemoContainer components={["DatePicker"]}>
+              <DatePicker
+                label="Start Date"
+                value={selectedDate}
+                onChange={(newDate) => setSelectedDate(newDate)}
+                renderInput={(params) => (
+                  <TextField
+                    {...params}
+                    size="small"
+                    InputLabelProps={{ shrink: false }}
+                    sx={{
+                      width: 200,
+                      fontSize: "0.875rem",
+                      height: 40,
+                    }}
+                  />
+                )}
+              />
+            </DemoContainer>
 
-<LocalizationProvider dateAdapter={AdapterDayjs}>
-  <Box sx={{ display: "flex", gap: 2 }}>
-    <DemoContainer components={["DatePicker"]}>
-      <DatePicker
-        label="Start Date"
-        value={selectedDate}
-        onChange={(newDate) => setSelectedDate(newDate)}
-        renderInput={(params) => (
-          <TextField
-            {...params}
-            size="small"
-            InputLabelProps={{ shrink: false }}
-            sx={{
-              width: 200,
-              fontSize: "0.875rem",
-              height: 40,
-            }}
-          />
-        )}
-      />
-    </DemoContainer>
+            <DemoContainer components={["DatePicker"]}>
+              <DatePicker
+                label="End Date"
+                value={endDate}
+                onChange={(newDate) => setEndDate(newDate)}
+                renderInput={(params) => (
+                  <TextField
+                    {...params}
+                    size="small"
+                    InputLabelProps={{ shrink: false }}
+                    sx={{
+                      width: 200,
+                      fontSize: "0.875rem",
+                      height: 40,
+                    }}
+                  />
+                )}
+              />
+            </DemoContainer>
 
-    <DemoContainer components={["DatePicker"]}>
-      <DatePicker
-        label="End Date"
-        value={endDate}
-        onChange={(newDate) => setEndDate(newDate)}
-        renderInput={(params) => (
-          <TextField
-            {...params}
-            size="small"
-            InputLabelProps={{ shrink: false }}
-            sx={{
-              width: 200,
-              fontSize: "0.875rem",
-              height: 40,
-            }}
-          />
-        )}
-      />
-    </DemoContainer>
+            {/* Button to clear the date filter */}
+            <IconButton
+              onClick={() => {
+                setSelectedDate(null);
+                setEndDate(null);
+              }}
+              size="small"
+            >
+              <ClearIcon />
+            </IconButton>
+          </Box>
+        </LocalizationProvider>
 
-    {/* Button to clear the date filter */}
-    <IconButton onClick={() => { setSelectedDate(null); setEndDate(null); }} size="small">
-      <ClearIcon />
-    </IconButton>
-  </Box>
-</LocalizationProvider>
-
-                
-         <TextField
+        <TextField
           placeholder="Search Orders"
           sx={{
             width: "250px",
@@ -220,12 +249,17 @@ const OrderList = () => {
               padding: "5px 10px",
               fontSize: "12px",
             },
-            '& .MuiOutlinedInput-root': {
+            "& .MuiOutlinedInput-root": {
               paddingRight: 0, // Removes padding-right
             },
           }}
           onKeyPress={(event) => {
-            if (event.key === " " && (searchQuery.trim() === "" || searchQuery.startsWith(" ") || searchQuery.endsWith(" "))) {
+            if (
+              event.key === " " &&
+              (searchQuery.trim() === "" ||
+                searchQuery.startsWith(" ") ||
+                searchQuery.endsWith(" "))
+            ) {
               event.preventDefault();
             }
           }}
@@ -248,167 +282,203 @@ const OrderList = () => {
               </InputAdornment>
             ),
           }}
-          
-        
-        />  
-        
-        <Button sx={{ textTransform: "none" , padding:0}}>
-        Total Orders: {filteredOrders.length}
-      </Button>
+        />
+
+        <Button sx={{ textTransform: "none", padding: 0 }}>
+          Total Orders: {filteredOrders.length}
+        </Button>
       </Box>
-     <Box sx={{margin:'10px'}}>
-     <TableContainer component={Paper}>
-        <Table>
-          <TableHead>
-            <TableRow>
-              <TableCell align="center">OrderId
-              <IconButton onClick={(e) => handleOpenMenu(e, "order_id")}>
-                  <MoreVertIcon sx={{ fontSize: "14px" }} />
-                </IconButton>
-              </TableCell>
-              <TableCell align="center">Total Items
-              <IconButton onClick={(e) => handleOpenMenu(e, "total_items")}>
-                  <MoreVertIcon sx={{ fontSize: "14px" }} />
-                </IconButton>
-              </TableCell>
-              <TableCell align="center">Order Value
-              <IconButton onClick={(e) => handleOpenMenu(e, "amount")}>
-                  <MoreVertIcon sx={{ fontSize: "14px" }} />
-                </IconButton>
-              </TableCell>
-              <TableCell align="center">Order Date
-              <IconButton onClick={(e) => handleOpenMenu(e, "order_date")}>
-                  <MoreVertIcon sx={{ fontSize: "14px" }} />
-                </IconButton>
-              </TableCell>
-              <TableCell align="center">Payment Status
-              <IconButton
+      <Box sx={{ margin: "10px" }}>
+        <TableContainer component={Paper}>
+          <Table>
+            <TableHead>
+              <TableRow>
+                <TableCell align="center">
+                  OrderId
+                  <IconButton onClick={(e) => handleOpenMenu(e, "order_id")}>
+                    <MoreVertIcon sx={{ fontSize: "14px" }} />
+                  </IconButton>
+                </TableCell>
+                <TableCell align="center">
+                  Total Items
+                  <IconButton onClick={(e) => handleOpenMenu(e, "total_items")}>
+                    <MoreVertIcon sx={{ fontSize: "14px" }} />
+                  </IconButton>
+                </TableCell>
+                <TableCell align="center">
+                  Order Value
+                  <IconButton onClick={(e) => handleOpenMenu(e, "amount")}>
+                    <MoreVertIcon sx={{ fontSize: "14px" }} />
+                  </IconButton>
+                </TableCell>
+                <TableCell align="center">
+                  Order Date
+                  <IconButton onClick={(e) => handleOpenMenu(e, "order_date")}>
+                    <MoreVertIcon sx={{ fontSize: "14px" }} />
+                  </IconButton>
+                </TableCell>
+                <TableCell align="center">
+                  Payment Status
+                  <IconButton
                     onClick={(e) => handleOpenMenu(e, "payment_status")}
                   >
                     <MoreVertIcon sx={{ fontSize: "14px" }} />
                   </IconButton>
-              </TableCell>
-              <TableCell align="center">Fulfilled Status
-              <IconButton
+                </TableCell>
+                <TableCell align="center">
+                  Fulfilled Status
+                  <IconButton
                     onClick={(e) => handleOpenMenu(e, "fulfilled_status")}
                   >
                     <MoreVertIcon sx={{ fontSize: "14px" }} />
                   </IconButton>
-              </TableCell>
-              <TableCell align="center">Delivery Status
-              <IconButton
+                </TableCell>
+                <TableCell align="center">
+                  Delivery Status
+                  <IconButton
                     onClick={(e) => handleOpenMenu(e, "delivery_status")}
                   >
                     <MoreVertIcon sx={{ fontSize: "14px" }} />
                   </IconButton>
-              </TableCell>
-              <TableCell align="center">Reorder
-              <IconButton
-                    onClick={(e) => handleOpenMenu(e, "is_reorder")}
-                  >
+                </TableCell>
+                <TableCell align="center">
+                  Reorder
+                  <IconButton onClick={(e) => handleOpenMenu(e, "is_reorder")}>
                     <MoreVertIcon sx={{ fontSize: "14px" }} />
                   </IconButton>
-              </TableCell>
-              <TableCell>Make Payment</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {Array.isArray(filteredOrders) && filteredOrders.length > 0 ? (
-              filteredOrders.map((order) => (
-                <TableRow key={order.order_id} style={{ cursor: "pointer" }} 
-                sx={{
-                  '&:hover': {
-                    backgroundColor: '#6fb6fc38', // Customize your hover color here
-                  },
-                }}>
-                  <TableCell align="center" onClick={() => handleOrderClick(order.id)}>
-                    {order.order_id}
-                  </TableCell>
-                  <TableCell align="center" onClick={() => handleOrderClick(order.id)}>{order.total_items}</TableCell>
-                  <TableCell align="center" onClick={() => handleOrderClick(order.id)}>{order.currency + order.amount}</TableCell>
-                  <TableCell align="center" onClick={() => handleOrderClick(order.id)}>
-                    {new Date(order.order_date).toLocaleDateString()}
-                  </TableCell>
-                  <TableCell align="center"
-                  style={{
-                    color:
-                      order.payment_status === "Pending"
-                        ? "red"
-                        : order.payment_status === "Paid"
-                        ? "orange"
-                        : order.payment_status === "Completed"
-                        ? "green"
-                        : order.payment_status === "Failed"
-                        ? "red"
-                        : "black", // Default color
-                  }}>{order.payment_status}</TableCell>
-                  <TableCell align="center"
-                  style={{
-                    color:
-                      order.fulfilled_status === "Unfulfilled"
-                        ? "red"
-                        : order.fulfilled_status === "Partially Fulfilled"
-                        ? "orange"
-                        : order.fulfilled_status === "Fulfilled"
-                        ? "green"
-                        : "black", // Default color
-                  }}>{order.fulfilled_status}</TableCell>
-                  <TableCell align="center" style={{
-                    color:
-                      order.delivery_status === "Pending"
-                        ? "red"
-                        : order.delivery_status === "Shipped"
-                        ? "orange"
-                        : order.delivery_status === "Completed"
-                        ? "green"
-                        : order.delivery_status === "Canceled"
-                        ? "red"
-                        : "black", // Default color
-                  }}
->{order.delivery_status}</TableCell>
-                  <TableCell align="center">{order.is_reorder ? "yes" : "no"}</TableCell>
-                  <TableCell>
-                    <Button
-                      variant="contained"
-                      color="primary"
-                      sx={{
-                        fontSize: "10px",
-                        textTransform: "none",
-                        border: "none",
-                        padding: "3px 6px",
-                        boxShadow: "none",
-                        ...getButtonStyles(order.payment_status),
-                      }}
-                      onClick={() => handlePayment(order.id)}
-                      disabled={
-                        order.payment_status === "paid" ||
-                        order.payment_status === "completed"
-                      }
+                </TableCell>
+                <TableCell>Make Payment</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {Array.isArray(filteredOrders) && filteredOrders.length > 0 ? (
+                filteredOrders.map((order) => (
+                  <TableRow
+                    key={order.order_id}
+                    style={{ cursor: "pointer" }}
+                    sx={{
+                      "&:hover": {
+                        backgroundColor: "#6fb6fc38", // Customize your hover color here
+                      },
+                    }}
+                  >
+                    <TableCell
+                      align="center"
+                      onClick={() => handleOrderClick(order.id)}
                     >
-                      Confirm Payment
-                    </Button>
+                      {order.order_id}
+                    </TableCell>
+                    <TableCell
+                      align="center"
+                      onClick={() => handleOrderClick(order.id)}
+                    >
+                      {order.total_items}
+                    </TableCell>
+                    <TableCell
+                      align="center"
+                      onClick={() => handleOrderClick(order.id)}
+                    >
+                      {order.currency + order.amount}
+                    </TableCell>
+                    <TableCell
+                      align="center"
+                      onClick={() => handleOrderClick(order.id)}
+                    >
+                      {new Date(order.order_date).toLocaleDateString()}
+                    </TableCell>
+                    <TableCell
+                      align="center"
+                      style={{
+                        color:
+                          order.payment_status === "Pending"
+                            ? "red"
+                            : order.payment_status === "Paid"
+                              ? "orange"
+                              : order.payment_status === "Completed"
+                                ? "green"
+                                : order.payment_status === "Failed"
+                                  ? "red"
+                                  : "black", // Default color
+                      }}
+                    >
+                      {order.payment_status}
+                    </TableCell>
+                    <TableCell
+                      align="center"
+                      style={{
+                        color:
+                          order.fulfilled_status === "Unfulfilled"
+                            ? "red"
+                            : order.fulfilled_status === "Partially Fulfilled"
+                              ? "orange"
+                              : order.fulfilled_status === "Fulfilled"
+                                ? "green"
+                                : "black", // Default color
+                      }}
+                    >
+                      {order.fulfilled_status}
+                    </TableCell>
+                    <TableCell
+                      align="center"
+                      style={{
+                        color:
+                          order.delivery_status === "Pending"
+                            ? "red"
+                            : order.delivery_status === "Shipped"
+                              ? "orange"
+                              : order.delivery_status === "Completed"
+                                ? "green"
+                                : order.delivery_status === "Canceled"
+                                  ? "red"
+                                  : "black", // Default color
+                      }}
+                    >
+                      {order.delivery_status}
+                    </TableCell>
+                    <TableCell align="center">
+                      {order.is_reorder ? "yes" : "no"}
+                    </TableCell>
+                    <TableCell>
+                      <Button
+                        variant="contained"
+                        color="primary"
+                        sx={{
+                          fontSize: "10px",
+                          textTransform: "none",
+                          border: "none",
+                          padding: "3px 6px",
+                          boxShadow: "none",
+                          ...getButtonStyles(order.payment_status),
+                        }}
+                        onClick={() => handlePayment(order.id)}
+                        disabled={
+                          order.payment_status === "paid" ||
+                          order.payment_status === "completed"
+                        }
+                      >
+                        Confirm Payment
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))
+              ) : (
+                <TableRow>
+                  <TableCell colSpan={9} align="center">
+                    No Orders Available
                   </TableCell>
                 </TableRow>
-              ))
-            ) : (
-              <TableRow>
-                <TableCell colSpan={9} align="center">
-                  No Orders Available
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
-      </TableContainer>
-     </Box>
+              )}
+            </TableBody>
+          </Table>
+        </TableContainer>
+      </Box>
 
       <Menu
         anchorEl={anchorEl}
         open={Boolean(anchorEl)}
         onClose={handleCloseMenu}
       >
-
-{currentColumn === "order_id" && (
+        {currentColumn === "order_id" && (
           <>
             <MenuItem onClick={() => handleSelectSort("order_id", "asc")}>
               Sort Low to High
@@ -419,7 +489,7 @@ const OrderList = () => {
           </>
         )}
 
-{currentColumn === "total_items" && (
+        {currentColumn === "total_items" && (
           <>
             <MenuItem onClick={() => handleSelectSort("total_items", "asc")}>
               Sort Low to High
@@ -430,7 +500,7 @@ const OrderList = () => {
           </>
         )}
 
-{currentColumn === "amount" && (
+        {currentColumn === "amount" && (
           <>
             <MenuItem onClick={() => handleSelectSort("amount", "asc")}>
               Sort Low to High
@@ -441,17 +511,16 @@ const OrderList = () => {
           </>
         )}
 
-{currentColumn === "order_date" && (
+        {currentColumn === "order_date" && (
           <>
             <MenuItem onClick={() => handleSelectSort("order_date", "asc")}>
               Lowest
             </MenuItem>
             <MenuItem onClick={() => handleSelectSort("order_date", "desc")}>
-             Highest
+              Highest
             </MenuItem>
           </>
         )}
-
 
         {currentColumn === "delivery_status" && (
           <>
