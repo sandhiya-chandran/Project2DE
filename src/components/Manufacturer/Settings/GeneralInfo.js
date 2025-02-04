@@ -67,6 +67,7 @@ const handleSaveChanges = async () => {
         is_active: isActive,
         logo: logoPreview, // Send the logo as a base64 string (or the appropriate format)
       };
+      
   
       // You can make a PUT or PATCH request to save the changes
       await axios.put(`${process.env.REACT_APP_IP}updateLogo/`, data);
