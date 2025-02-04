@@ -24,6 +24,7 @@ import EditIcon from "@mui/icons-material/Edit";
 import axios from "axios";
 import { useParams } from "react-router-dom";
 import EmailTemplatePopUp from "../../Manufacturer/Settings/EmailTemplatePopUp";
+import GeneralInfo from "./GeneralInfo";
 
 function Settingspage() {
   const [selectedTab, setSelectedTab] = useState(0);
@@ -42,6 +43,10 @@ function Settingspage() {
     bankAccount: "",
   });
 
+  useEffect(() => {
+    console.log("Selected Tab: ", selectedTab);  // Log to check the tab state
+  }, [selectedTab]);
+  
   // Fetch email templates on component load
   useEffect(() => {
     const fetchEmailTemplates = async () => {
@@ -81,7 +86,7 @@ function Settingspage() {
 
   const handleToggle = (event) => {
     setEnabled(event.target.checked); // Toggle the state
-  };
+  };  
 
   // Close popup handler
   const handleClosePopup = () => {
@@ -131,7 +136,8 @@ function Settingspage() {
         <Grid container spacing={2}>
           <Grid item xs={12}>
             {/* General Info Tab */}
-            <Box hidden={selectedTab !== 0}>
+     {/* General Info Tab */}
+     <Box sx={{ display: selectedTab === 0 ? "block" : "none" }}>
               <Box
                 sx={{
                   display: "flex",
@@ -142,14 +148,10 @@ function Settingspage() {
                   flexDirection: "column",
                 }}
               >
-                <Typography variant="h6" color="textSecondary">
-                  This feature will be available soon!
-                </Typography>
-                <Typography variant="body2" color="textSecondary">
-                  We're working on it. Stay tuned!
-                </Typography>
+                <GeneralInfo companyInfo={companyInfo} /> {/* Pass companyInfo as a prop */}
               </Box>
             </Box>
+
 
             {/* Email Template Tab */}
             <Box hidden={selectedTab !== 1}>
@@ -203,35 +205,7 @@ function Settingspage() {
 
             {/* Notifications Tab */}
             <Box hidden={selectedTab !== 2}>
-              {/* <Card elevation={3} sx={{ padding: '20px' }}>
-              <CardContent>
-                <Typography variant="h6" gutterBottom>
-                  Notifications
-                </Typography>
-                <Typography variant="body1" sx={{ marginBottom: '16px' }}>
-                  Enable or disable notifications for important updates regarding your account.
-                </Typography>
-                <FormControlLabel
-                  control={<Switch checked={enabled} onChange={handleToggle} />}
-                  label="Enable Notifications"
-                  sx={{ marginBottom: '16px' }}
-                />
-              </CardContent>
-            </Card>
-            <Button
-              variant="contained"
-              color="primary"
-              sx={{
-                marginTop: '16px',
-                backgroundColor: '#1976d2',
-                '&:hover': { backgroundColor: '#1565c0' },
-                padding: '10px 20px',
-                borderRadius: '5px',
-              }}
-            >
-              Save Settings
-            </Button> */}
-
+     
               <Box
                 sx={{
                   display: "flex",
